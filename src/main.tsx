@@ -10,24 +10,24 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import "./types/global.d.ts";
 
-// Lazy load route components for better code splitting
-const Landing = lazy(() => import("./pages/Landing.tsx"));
-const AuthPage = lazy(() => import("./pages/Auth.tsx"));
-const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+// Lazy load route components for better code splitting (extensionless paths)
+const Landing = lazy(() => import("./pages/Landing"));
+const AuthPage = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Dashboard sub-routes
-const DashboardLayout = lazy(() => import("./components/dashboard-layout.tsx"));
-const DashboardIndex = lazy(() => import("./pages/dashboard/Index.tsx"));
-const TodayPage = lazy(() => import("./pages/dashboard/Today.tsx"));
-const PhasesPage = lazy(() => import("./pages/dashboard/Phases.tsx"));
-const ActionsPage = lazy(() => import("./pages/dashboard/Actions.tsx"));
-const InputsPage = lazy(() => import("./pages/dashboard/Inputs.tsx"));
-const MilestonesPage = lazy(() => import("./pages/dashboard/Milestones.tsx"));
-const LogbookPage = lazy(() => import("./pages/dashboard/Logbook.tsx"));
-const ReviewPage = lazy(() => import("./pages/dashboard/Review.tsx"));
-const RulesPage = lazy(() => import("./pages/dashboard/Rules.tsx"));
-const ResourcesPage = lazy(() => import("./pages/dashboard/Resources.tsx"));
-const SetupPage = lazy(() => import("./pages/dashboard/Setup.tsx"));
+const DashboardLayout = lazy(() => import("./components/dashboard-layout"));
+const DashboardIndex = lazy(() => import("./pages/dashboard/Index"));
+const TodayPage = lazy(() => import("./pages/dashboard/Today"));
+const PhasesPage = lazy(() => import("./pages/dashboard/Phases"));
+const ActionsPage = lazy(() => import("./pages/dashboard/Actions"));
+const InputsPage = lazy(() => import("./pages/dashboard/Inputs"));
+const MilestonesPage = lazy(() => import("./pages/dashboard/Milestones"));
+const LogbookPage = lazy(() => import("./pages/dashboard/Logbook"));
+const ReviewPage = lazy(() => import("./pages/dashboard/Review"));
+const RulesPage = lazy(() => import("./pages/dashboard/Rules"));
+const ResourcesPage = lazy(() => import("./pages/dashboard/Resources"));
+const SetupPage = lazy(() => import("./pages/dashboard/Setup"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -39,8 +39,6 @@ function RouteLoading() {
 }
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
-
-
 
 function RouteSyncer() {
   const location = useLocation();
@@ -64,7 +62,6 @@ function RouteSyncer() {
 
   return null;
 }
-
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
