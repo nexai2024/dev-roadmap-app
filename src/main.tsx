@@ -15,6 +15,20 @@ const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
+// Dashboard sub-routes
+const DashboardLayout = lazy(() => import("./components/dashboard-layout.tsx"));
+const DashboardIndex = lazy(() => import("./pages/dashboard/Index.tsx"));
+const TodayPage = lazy(() => import("./pages/dashboard/Today.tsx"));
+const PhasesPage = lazy(() => import("./pages/dashboard/Phases.tsx"));
+const ActionsPage = lazy(() => import("./pages/dashboard/Actions.tsx"));
+const InputsPage = lazy(() => import("./pages/dashboard/Inputs.tsx"));
+const MilestonesPage = lazy(() => import("./pages/dashboard/Milestones.tsx"));
+const LogbookPage = lazy(() => import("./pages/dashboard/Logbook.tsx"));
+const ReviewPage = lazy(() => import("./pages/dashboard/Review.tsx"));
+const RulesPage = lazy(() => import("./pages/dashboard/Rules.tsx"));
+const ResourcesPage = lazy(() => import("./pages/dashboard/Resources.tsx"));
+const SetupPage = lazy(() => import("./pages/dashboard/Setup.tsx"));
+
 // Simple loading fallback for route transitions
 function RouteLoading() {
   return (
@@ -62,7 +76,20 @@ createRoot(document.getElementById("root")!).render(
           <Suspense fallback={<RouteLoading />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<AuthPage redirectAfterAuth="/" />} /> {/* TODO: change redirect after auth to correct page */}
+              <Route path="/auth" element={<AuthPage redirectAfterAuth="/dashboard" />} />
+              <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route index element={<DashboardIndex />} />
+                <Route path="today" element={<TodayPage />} />
+                <Route path="phases" element={<PhasesPage />} />
+                <Route path="actions" element={<ActionsPage />} />
+                <Route path="inputs" element={<InputsPage />} />
+                <Route path="milestones" element={<MilestonesPage />} />
+                <Route path="logbook" element={<LogbookPage />} />
+                <Route path="review" element={<ReviewPage />} />
+                <Route path="rules" element={<RulesPage />} />
+                <Route path="resources" element={<ResourcesPage />} />
+                <Route path="setup" element={<SetupPage />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

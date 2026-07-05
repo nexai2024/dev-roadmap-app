@@ -30,14 +30,75 @@ const schema = defineSchema(
       isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
 
       role: v.optional(roleValidator), // role of the user. do not remove
+
+      // Indie Dev Boss Protocol notebook fields
+      displayName: v.optional(v.string()),
+      startedAt: v.optional(v.number()), // protocol start day (ms epoch)
+      currentPhase: v.optional(v.string()), // phase:fundamentals ... phase:growth
+      currentDay: v.optional(v.number()), // 1..N day of the protocol
+      bio: v.optional(v.string()),
+      twitterHandle: v.optional(v.string()),
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // add other tables here
+    // Daily log — one row per user per date. The protocol notebook.
+    dailyLogs: defineTable({
+      userId: v.id("users"),
+      date: v.string(), // ISO YYYY-MM-DD
+      phaseId: v.string(),
+      // 6 numeric fields from the protocol "how progress is tracked" schema
+      hoursCoded: v.number(),
+      commits: v.number(),
+      shippedUrl: v.optional(v.string()),
+      bipPostUrl: v.optional(v.string()),
+      customersContacted: v.number(),
+      mrrUsd: v.number(),
+      notes: v.optional(v.string()),
+      // Daily input tallies — which of the 6 daily inputs you hit today
+      inputsDone: v.array(v.string()), // input:code-1h, etc.
+      // "production chain": what you shipped today (manually written)
+      shippedNote: v.optional(v.string()),
+      // legacy "mood" so the engineer logbook feels alive
+      mood: v.optional(v.union(
+        v.literal("locked-in"),
+        v.literal("shipping"),
+        v.literal("stuck"),
+        v.literal("shipping-slow"),
+      )),
+    })
+      .index("by_user_date", ["userId", "date"])
+      .index("by_user", ["userId"]),
 
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    // Progress against each of the 11 numbered key actions
+    keyActionProgress: defineTable({
+      userId: v.id("users"),
+      actionId: v.string(), // action:01-complete-cs50
+      status: v.union(
+        v.literal("not_started"),
+        v.literal("in_progress"),
+        v.literal("completed"),
+      ),
+      startedAt: v.optional(v.number()),
+      completedAt: v.optional(v.number()),
+      proofUrl: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_action", ["userId", "actionId"]),
+
+    // Weekly Sunday review
+    weeklyReviews: defineTable({
+      userId: v.id("users"),
+      weekStartDate: v.string(), // ISO YYYY-MM-DD (Monday of reviewed week)
+      hoursCoded: v.number(),
+      weeksSinceLastDeploy: v.number(),
+      mrrWeek: v.number(),
+      mrrLastWeek: v.number(),
+      summary: v.string(),
+      publishedUrl: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_week", ["userId", "weekStartDate"]),
   },
   {
     schemaValidation: false,

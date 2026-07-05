@@ -23,7 +23,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
+  --color-destructive: var(---destructive);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -40,76 +40,95 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-hand: "Caveat", "Patrick Hand", cursive;
 }
 
-/* CHANGE VALUES FOR THEME */
+/* CHANGE VALUES FOR THEME — ENGINEER'S GRID NOTEBOOK */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.25rem;
+
+  /* Cream graph paper */
+  --background: #f3eddc;
+  --foreground: #1c1c1f;
+
+  /* Slightly lighter cards for "pages" */
+  --card: #fbf6e9;
+  --card-foreground: #1c1c1f;
+
+  --popover: #fbf6e9;
+  --popover-foreground: #1c1c1f;
+
+  /* India-ink black */
+  --primary: #1c1c1f;
+  --primary-foreground: #fbf6e9;
+
+  /* Graphite / lead pencil */
+  --secondary: #e9e0c8;
+  --secondary-foreground: #1c1c1f;
+
+  --muted: #ece4cd;
+  --muted-foreground: #6b6353;
+
+  --accent: #dde4cf;
+  --accent-foreground: #1c1c1f;
+
+  --destructive: #b91c1c;
+  --border: #c9bfa0;
+  --input: #c9bfa0;
+  --ring: #b91c1c;
+
+  /* India ink blue + red margin + engineer green */
+  --chart-1: #1d4ed8;
+  --chart-2: #b91c1c;
+  --chart-3: #047857;
+  --chart-4: #b45309;
+  --chart-5: #6d28d9;
+
+  --sidebar: #ede4c8;
+  --sidebar-foreground: #1c1c1f;
+  --sidebar-primary: #1d4ed8;
+  --sidebar-primary-foreground: #fbf6e9;
+  --sidebar-accent: #e0d6b6;
+  --sidebar-accent-foreground: #1c1c1f;
+  --sidebar-border: #c9bfa0;
+  --sidebar-ring: #b91c1c;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #18181b;
+  --foreground: #f3eddc;
+  --card: #1f1f23;
+  --card-foreground: #f3eddc;
+  --popover: #1f1f23;
+  --popover-foreground: #f3eddc;
+  --primary: #f3eddc;
+  --primary-foreground: #1c1c1f;
+  --secondary: #27272a;
+  --secondary-foreground: #f3eddc;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #f3eddc;
+  --destructive: #ef4444;
+  --border: #3f3f46;
+  --input: #3f3f46;
+  --ring: #ef4444;
+  --chart-1: #60a5fa;
+  --chart-2: #f87171;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --sidebar: #1f1f23;
+  --sidebar-foreground: #f3eddc;
+  --sidebar-primary: #60a5fa;
+  --sidebar-primary-foreground: #1c1c1f;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #f3eddc;
+  --sidebar-border: #3f3f46;
+  --sidebar-ring: #ef4444;
 }
 
 @layer base {
@@ -117,10 +136,163 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-mono);
+    background-image:
+      /* minor grid: 20px */
+      linear-gradient(to right, rgba(28, 28, 31, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(28, 28, 31, 0.06) 1px, transparent 1px),
+      /* major grid: 100px */
+      linear-gradient(to right, rgba(28, 28, 31, 0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(28, 28, 31, 0.10) 1px, transparent 1px),
+      /* paper grain noise (subtle) */
+      radial-gradient(rgba(28, 28, 31, 0.025) 1px, transparent 1px);
+    background-size:
+      20px 20px,
+      20px 20px,
+      100px 100px,
+      100px 100px,
+      4px 4px;
+    background-attachment: fixed;
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
+  ::selection {
+    background: #fde68a;
+    color: #1c1c1f;
+  }
+}
+
+/* ----- Engineer's Notebook utilities ----- */
+@layer utilities {
+  /* Red vertical margin line on the left of every "page" */
+  .nb-margin {
+    position: relative;
+  }
+  .nb-margin::before {
+    content: "";
+    position: absolute;
+    left: 64px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(185, 28, 28, 0.45);
+    pointer-events: none;
+    z-index: 0;
+  }
+  @media (max-width: 768px) {
+    .nb-margin::before {
+      left: 32px;
+    }
+  }
+
+  .nb-page {
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 1px 0 rgba(28, 28, 31, 0.04),
+      0 8px 24px -16px rgba(28, 28, 31, 0.25);
+  }
+
+  .nb-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: relative;
+  }
+
+  /* "Punch holes" down the left side of a page */
+  .nb-holes {
+    position: relative;
+  }
+  .nb-holes::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    top: 0;
+    bottom: 0;
+    width: 14px;
+    background-image: radial-gradient(circle at 50% 50%, rgba(28, 28, 31, 0.15) 0 6px, transparent 7px);
+    background-size: 14px 120px;
+    background-repeat: repeat-y;
+    pointer-events: none;
+  }
+
+  .nb-hand {
+    font-family: var(--font-hand);
+    line-height: 1.1;
+  }
+
+  .nb-tape {
+    background: rgba(253, 224, 71, 0.55);
+    box-shadow: 0 1px 0 rgba(28, 28, 31, 0.05);
+    border-top: 1px dashed rgba(28, 28, 31, 0.1);
+    border-bottom: 1px dashed rgba(28, 28, 31, 0.1);
+  }
+
+  .nb-stamp {
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    padding: 2px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-size: 10px;
+    transform: rotate(-3deg);
+    display: inline-block;
+  }
+
+  /* Cross-section header rule, like engineering drawing */
+  .nb-rule {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted-foreground);
+  }
+  .nb-rule::before,
+  .nb-rule::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Highlight block, like a yellow pen mark on engineering paper */
+  .nb-highlight {
+    background: linear-gradient(180deg, transparent 0 35%, rgba(253, 224, 71, 0.55) 35% 90%, transparent 90%);
+    padding: 0 4px;
+  }
+
+  /* "Checked off" line strike-through like filling in a task */
+  .nb-crossed {
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+    color: var(--muted-foreground);
+  }
+
+  /* Hand-drawn underline, slightly jittered */
+  .nb-underline {
+    background-image: linear-gradient(to right, currentColor 0%, currentColor 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 2px;
+    background-position: 0 100%;
+  }
+}
+
+/* Smooth focus rings for notebook buttons */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Subtle ink press effect for interactive notebook elements */
+.nb-press:active {
+  transform: translateY(1px);
 }
