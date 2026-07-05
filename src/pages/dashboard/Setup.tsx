@@ -102,7 +102,7 @@ export default function SetupPage() {
               {PHASES[0].label} · {PHASES[0].window} · Day 1 of 100
             </p>
             <p className="nb-hand text-base text-muted-foreground mt-2">
-              "Phone in another room. Open CS50. Code for ninety minutes."
+              "Install Cursor. Open Odin HTML. Type your first prompt."
             </p>
           </div>
 

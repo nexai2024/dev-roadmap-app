@@ -11,7 +11,7 @@ export default function PhasesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const currentPhaseId =
-    (profile?.currentPhase as PhaseId | undefined) ?? "phase:fundamentals";
+    (profile?.currentPhase as PhaseId | undefined) ?? "phase:ai-fundamentals";
   const currentPhaseIndex = PHASES.findIndex((p) => p.id === currentPhaseId);
 
   const advancePhase = async (id: PhaseId) => {
@@ -27,7 +27,7 @@ export default function PhasesPage() {
       <div>
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
           <Layers className="h-3 w-3" />
-          Architecture · 6 phases with hard exit gates
+          Architecture · 7 phases with hard exit gates
         </p>
         <h1 className="font-mono text-2xl md:text-3xl font-semibold mt-1 leading-tight">
           Phases.
@@ -75,7 +75,7 @@ export default function PhasesPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-mono text-lg">{p.label}</h2>
                       <span className="font-mono text-[11px] text-muted-foreground uppercase tracking-widest">
-                        {p.name}
+                        {p.slug}
                       </span>
                       {isCurrent && (
                         <span className="nb-stamp text-primary ml-auto">current</span>

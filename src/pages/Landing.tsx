@@ -11,20 +11,24 @@ import {
   ListChecks,
   Loader,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  HARD_RULES,
+  KEY_ACTIONS,
+  NON_NEGOTIABLES,
+  OUTPUTS,
   PHASES,
   PHILOSOPHY,
-  KEY_ACTIONS,
-  OUTPUTS,
-  HARD_RULES,
-  NON_NEGOTIABLES,
+  RESOURCES,
+  getDaySchedule,
 } from "@/data/protocol";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Landing() {
   const { isAuthenticated, isLoading } = useAuth();
+  const sampleDay = getDaySchedule(4);
 
   return (
     <motion.div
@@ -38,14 +42,15 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link to="/" className="font-mono font-bold tracking-tight nb-press">
             INDIE·DEV·BOSS
-            <span className="nb-hand text-base text-primary ml-1">protocol</span>
+            <span className="nb-hand text-base text-primary ml-1">100-day</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">
             <a href="#phases" className="px-3 py-1 hover:underline">Phases</a>
+            <a href="#day" className="px-3 py-1 hover:underline">A Day</a>
             <a href="#actions" className="px-3 py-1 hover:underline">Actions</a>
             <a href="#inside" className="px-3 py-1 hover:underline">Inside</a>
             <a href="#prereqs" className="px-3 py-1 hover:underline">Prereqs</a>
-            <a href="#rules" className="px-3 py-1 hover:underline">Hard Rules</a>
+            <a href="#rules" className="px-3 py-1 hover:underline">Rules</a>
           </nav>
           <div className="flex-1" />
           {isLoading ? (
@@ -78,19 +83,19 @@ export default function Landing() {
             Day 01 · The Indie Dev Boss Protocol · 100-day challenge
           </p>
           <h1 className="font-mono text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight">
-            Zero → MRR, <br />
             <span className="nb-hand text-primary text-5xl md:text-6xl lg:text-7xl">
-              one bug at a time.
+              Cursor + Claude
             </span>
+            <br />+ 99 days of shipping.
           </h1>
 
           <p className="text-muted-foreground mt-6 max-w-xl text-base leading-relaxed">
-            <span className="nb-highlight">{PHILOSOPHY.horizon}</span> Six
-            phases. Eleven actions. Thirty days of hour-by-hour drills in
-            Month 1, the rest compressed into 70 days of shipping. The{" "}
-            {PHILOSOPHY.shortLabel}: revenue is the only KPI that matters.
-            Tutorials are procrastination. Ship ugly, ship weekly, charge
-            from Day 76.
+            <span className="nb-highlight">{PHILOSOPHY.horizon}</span>{" "}
+            Seven phases. Eleven key actions. <strong>A 100-day minute-by-minute plan</strong>{" "}
+            with rest and review blocks baked in. Every external tool linked.
+            Every day pre-loaded. {PHILOSOPHY.shortLabel}: revenue is the only
+            KPI. Tutorials are procrastination. <strong>Ship ugly, ship weekly,
+            charge from Day 38.</strong>
           </p>
 
           <div className="flex flex-wrap gap-3 mt-8">
@@ -129,59 +134,109 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Right: notebook page showing Day 1 */}
-        <div className="relative">
+        {/* Right: a sample day */}
+        <div id="day" className="relative">
           <div className="nb-page nb-holes p-6 sm:p-8 transform rotate-[0.5deg]">
             <div className="flex items-center justify-between">
               <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                The Notebook
+                Sample Day — Day {sampleDay?.day ?? 4}
               </span>
-              <span className="nb-stamp text-destructive">Day 1</span>
+              <span className="nb-stamp text-destructive">
+                {sampleDay?.focus.split(" ").slice(0, 2).join(" ") ?? "JS DOM"}
+              </span>
             </div>
             <h3 className="font-mono text-xl mt-2">Your first action.</h3>
             <p className="text-[10px] uppercase tracking-widest text-primary font-mono mt-1">
               Day 1 of 100
             </p>
             <p className="text-sm text-muted-foreground mt-2 italic">
-              "Phone in another room. Open the tutorial. Code for ninety minutes."
+              "Install Cursor. Open Odin HTML. Prompt your way to a working form."
             </p>
 
-            <ol className="mt-5 space-y-3 text-sm">
-              <Step
-                n={1}
-                text={
-                  <>
-                    Open the{" "}
-                    <Link to="/dashboard/prereqs" className="underline">
-                      Prerequisites
-                    </Link>{" "}
-                    page, sign up for CS50x and the free stack.
-                  </>
-                }
-              />
-              <Step n={2} text="Set Day 1. Open CS50x Lecture 0, post your first #buildinpublic." />
-              <Step n={3} text="Push a commit. Log it. Tomorrow, ship again. Repeat for 100 days." />
-              <Step n={4} text="Day 100 = first $1 MRR on Product Hunt. Day 200 = $1,000 MRR." />
-            </ol>
+            {sampleDay && (
+              <ol className="mt-5 space-y-3 text-sm">
+                {sampleDay.morning.slice(0, 2).map((m, i) => (
+                  <li key={`m${i}`} className="flex gap-3">
+                    <span className="font-mono font-bold text-primary tabular-nums shrink-0">
+                      {String(i + 1).padStart(2, "0")}.
+                    </span>
+                    <span>{m}</span>
+                  </li>
+                ))}
+                {sampleDay.afternoon.slice(0, 2).map((m, i) => (
+                  <li key={`a${i}`} className="flex gap-3">
+                    <span className="font-mono font-bold text-primary tabular-nums shrink-0">
+                      {String(i + 3).padStart(2, "0")}.
+                    </span>
+                    <span>{m}</span>
+                  </li>
+                ))}
+                <li className="flex gap-3 pt-2 border-t border-dashed border-border">
+                  <span className="font-mono font-bold text-primary tabular-nums shrink-0">
+                    {String(99).padStart(2, "0")}.
+                  </span>
+                  <span className="italic">{sampleDay.evening}</span>
+                </li>
+              </ol>
+            )}
+
+            {sampleDay && sampleDay.resources.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Day {sampleDay.day} links
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {sampleDay.resources.map((r) => (
+                    <a
+                      key={r.url}
+                      href={r.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="nb-press text-[11px] font-mono px-2 py-1 rounded-sm border border-border hover:bg-sidebar-accent inline-flex items-center gap-1"
+                    >
+                      {r.label} ↗
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-6 pt-4 border-t border-dashed border-border">
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                Non-negotiables
+                Non-negotiables (timed)
               </p>
               <ul className="mt-2 space-y-1.5 text-xs">
                 {NON_NEGOTIABLES.map((nn) => (
                   <li key={nn.time} className="flex gap-2">
-                    <span className="font-mono font-bold text-primary shrink-0">{nn.time}</span>
+                    <span className="font-mono font-bold text-primary shrink-0">
+                      {nn.time}
+                    </span>
                     <span>{nn.rule}</span>
                   </li>
                 ))}
               </ul>
             </div>
+
+            <div className="mt-6 pt-4 border-t border-dashed border-border">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                Total minimum spend · 100 days
+              </p>
+              <p className="font-mono text-lg mt-1">$100</p>
+              <p className="text-[11px] text-muted-foreground">
+                Cursor $20/mo + Make Book $30. Everything else has a free tier.
+              </p>
+              <Link
+                to="/dashboard/prereqs"
+                className="nb-press inline-flex items-center gap-1 text-xs font-mono px-2.5 py-1.5 mt-3 rounded-sm bg-primary text-primary-foreground"
+              >
+                See all sign-up links <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
 
           {/* Ink corner */}
           <div className="absolute -bottom-3 -right-3 nb-card nb-tape px-3 py-1 font-mono text-xs rotate-[3deg]">
-            RFI: 100 days
+            RFI: AI-first
           </div>
         </div>
       </section>
@@ -191,8 +246,8 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 py-16">
           <SectionHeader
             kicker="Architecture"
-            title="Six sequential phases. Hard exit gates."
-            description="Every phase feeds the next. You can't skip an exit gate, even if you feel ready. 100 days = first $1 MRR by Day 100; 200 days = $1,000+ MRR."
+            title="Seven sequential phases. One product. 100 days."
+            description="Every phase feeds the next. Day 100 = 3 paid customers = first MRR. Day 200 + = path to $1,000."
           />
           <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {PHASES.map((p, idx) => (
@@ -203,7 +258,7 @@ export default function Landing() {
                   </div>
                   <div className="flex-1">
                     <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                      {p.window} · {p.name}
+                      {p.window} · {p.slug}
                     </p>
                     <h3 className="font-mono text-lg mt-0.5">{p.label}</h3>
                   </div>
@@ -231,7 +286,7 @@ export default function Landing() {
         <SectionHeader
           kicker="Key Actions"
           title="Eleven numbered actions. Each has a deliverable and a success criteria."
-          description="Day-by-day deliverables are wired into your dashboard. Every action shows the resource, the deliverable, and the success criteria."
+          description="Day-by-day deliverables wired into your dashboard. Open the notebook for the full 11."
         />
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {KEY_ACTIONS.slice(0, 6).map((a, i) => (
@@ -244,18 +299,14 @@ export default function Landing() {
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {a.phaseId.replace("phase:", "")} · {a.window}
                 </p>
-                {a.resource && (
+                {a.resourceUrl && (
                   <a
-                    className="text-[11px] mt-1 underline block truncate"
-                    href={
-                      a.resource.startsWith("http")
-                        ? a.resource
-                        : `https://${a.resource.split(" ")[0]}`
-                    }
+                    href={a.resourceUrl}
                     target="_blank"
                     rel="noreferrer"
+                    className="text-[11px] mt-1 underline block truncate hover:text-primary"
                   >
-                    {a.resource}
+                    {a.resource} ↗
                   </a>
                 )}
               </div>
@@ -275,58 +326,48 @@ export default function Landing() {
           <SectionHeader
             kicker="What's inside"
             title="Ten pages of your engineer's grid notebook."
-            description="Plus a Prerequisites page that lists every account and tool you need to sign up for before Day 1, with direct signup links."
+            description="Plus a Prerequisites page that lists every signup link for Cursor, Claude, v0, Bolt.new, and the launch stack."
           />
           <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <InsideCard
-              icon={ClipboardList}
+              icon={CalendarRange}
               title="Today"
-              desc="Day X of 100, current phase, schedule (Month 1 detail) or phase guidance + quick log form."
+              desc="Day X of 100. Morning block, afternoon block, BIP post prompt, ship-by-EOD, clickable day links."
             />
             <InsideCard
               icon={Flag}
               title="Phases"
-              desc="Six phases with day windows, internals, mechanics, exit gates, and a current-phase switch."
+              desc="Seven phases with day windows, internals, mechanics, exit gates, and a current-phase switch."
             />
             <InsideCard
               icon={ListChecks}
               title="Daily Inputs"
-              desc="Six non-negotiables: code, ship, build-in-public, learn, talk, track. 7-day tally per input."
+              desc="Six non-negotiables: code, ship, build-in-public, learn, talk, weekly review. 7-day tally."
             />
             <InsideCard
               icon={CheckCircle2}
               title="Milestones"
-              desc="Six outputs on the 100-day timeline. CS50 cert → $1k MRR. Verification URL per milestone."
+              desc="Six outputs on the 100-day timeline: portfolio → $20 → MVP prod → 3 paying customers."
             />
             <InsideCard
               icon={BookOpen}
               title="Logbook"
-              desc="Every daily log, newest first. Engineer-grade history with totals + delete confirm."
+              desc="Every daily log, newest first. Engineer-grade history with totals."
             />
             <InsideCard
-              icon={CalendarRange}
-              title="30-day review"
-              desc="Every 30 days, 2 hours. Compute MRR / churn / NPS. Post the post-mortem to X."
-            />
-            <InsideCard
-              icon={KeyRound}
+              icon={Sparkles}
               title="Prerequisites"
-              desc="Signup links for every account, tool, community, and book the protocol needs. Free + paid."
+              desc="30 signup links covering AI tools, code stack, launch platforms, community, and paid services."
             />
             <InsideCard
               icon={Shield}
               title="Hard Rules"
-              desc="No tutorial after Day 75. Charge from Day 76. One product, 100 days."
+              desc="AI first. 5 hrs / 5 days. Charge or pivot Day 50. MRR is the only KPI."
             />
             <InsideCard
               icon={BookOpen}
               title="Resources"
-              desc="CS50, Odin, Full Stack Open, Next, Supabase, Stripe, Resend, PostHog, Cursor — every link live."
-            />
-            <InsideCard
-              icon={BookOpen}
-              title="Engineer's logbook"
-              desc="Engineer's grid theme: cream paper, red margin line, IBM Plex Mono, Caveat annotations, tape and stamp."
+              desc="CS50 no more — Odin + Cursor + v0 + Bolt + Lovable. Every link live."
             />
           </div>
 
@@ -356,7 +397,9 @@ export default function Landing() {
               <ul className="mt-3 space-y-3">
                 {HARD_RULES.map((r, i) => (
                   <li key={r.id} className="flex gap-3">
-                    <span className="nb-stamp text-primary shrink-0">{i + 1}</span>
+                    <span className="nb-stamp text-primary shrink-0">
+                      R{String(i + 1).padStart(2, "0")}
+                    </span>
                     <div>
                       <p className="font-mono text-sm">{r.text}</p>
                       <p className="nb-hand text-base text-muted-foreground mt-0.5">
@@ -382,31 +425,20 @@ export default function Landing() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-3 max-w-2xl">
-              These five accounts are the floor. Free. None takes more than 10 minutes. The full list of 25+ services (free + paid) lives on the{" "}
+              These five accounts are the floor. Free. Each takes under 10
+              minutes. The full list of 30+ services (free + paid) lives on the{" "}
               <Link to="/dashboard/prereqs" className="underline">
                 Prerequisites page
-              </Link>{" "}
-              inside the notebook.
+              </Link>
+              {" "}inside the notebook.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {[
-                {
-                  name: "CS50x",
-                  url: "https://cs50.harvard.edu/x/2025",
-                },
-                {
-                  name: "X / Twitter",
-                  url: "https://twitter.com/i/flow/signup",
-                },
                 { name: "GitHub", url: "https://github.com/signup" },
-                {
-                  name: "Makerlog",
-                  url: "https://getmakerlog.com",
-                },
-                {
-                  name: "Google Account",
-                  url: "https://accounts.google.com/signup",
-                },
+                { name: "X / Twitter", url: "https://twitter.com/i/flow/signup" },
+                { name: "Google Account", url: "https://accounts.google.com/signup" },
+                { name: "Cursor", url: "https://cursor.sh" },
+                { name: "Notion", url: "https://www.notion.so/signup" },
               ].map((p) => (
                 <a
                   key={p.name}
@@ -416,6 +448,27 @@ export default function Landing() {
                   className="nb-press text-xs font-mono px-2.5 py-1 rounded-sm border border-border hover:bg-sidebar-accent"
                 >
                   {p.name} ↗
+                </a>
+              ))}
+            </div>
+
+            <div className="mt-8 grid sm:grid-cols-2 gap-2">
+              {RESOURCES.filter((r) => r.type === "ai-tool").map((r) => (
+                <a
+                  key={r.id}
+                  href={r.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="nb-press flex items-center justify-between gap-2 nb-card p-3 hover:bg-sidebar-accent"
+                >
+                  <div>
+                    <p className="font-mono text-sm">{r.name}</p>
+                    <p className="text-[10px] mt-0.5 text-muted-foreground uppercase tracking-widest">
+                      AI tool
+                      {r.cost ? ` · ${r.cost}` : ""}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </a>
               ))}
             </div>
@@ -436,8 +489,8 @@ export default function Landing() {
         </h2>
         <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
           Free forever. Multi-user. Engineer's grid notebook. Tracks every
-          commit, every shipped day, every paid customer — on the way to $1
-          MRR by Day 100 and $1k by Day 200.
+          commit, every shipped day, every paid customer — on the way to 3
+          paying customers by Day 100 and $1k MRR after.
         </p>
         <div className="flex flex-wrap justify-center gap-3 mt-8">
           {isAuthenticated ? (
@@ -460,36 +513,23 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-4 justify-between text-xs text-muted-foreground">
           <span>© INDIE·DEV·BOSS · 100-day challenge · Pieter Levels doctrine</span>
           <span className="font-mono">
-            [{" "}
+            [{` `}
             <a href="https://makebook.io" className="underline" target="_blank" rel="noreferrer">
               makebook.io
-            </a>{" "}
-            ·{" "}
-            <a href="https://cs50.harvard.edu/x/2025" className="underline" target="_blank" rel="noreferrer">
-              cs50.harvard.edu/x/2025
-            </a>{" "}
-            ]
+            </a>
+            {` · `}
+            <a href="https://cursor.sh" className="underline" target="_blank" rel="noreferrer">
+              cursor.sh
+            </a>
+            {` · `}
+            <a href="https://www.theodinproject.com" className="underline" target="_blank" rel="noreferrer">
+              theodinproject.com
+            </a>
+            {` `}]
           </span>
         </div>
       </footer>
     </motion.div>
-  );
-}
-
-function Step({
-  n,
-  text,
-}: {
-  n: number;
-  text: React.ReactNode;
-}) {
-  return (
-    <li className="flex gap-3">
-      <span className="font-mono font-bold text-primary tabular-nums shrink-0">
-        {String(n).padStart(2, "0")}.
-      </span>
-      <span className="leading-snug">{text}</span>
-    </li>
   );
 }
 

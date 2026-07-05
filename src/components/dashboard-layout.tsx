@@ -77,7 +77,7 @@ export default function DashboardLayout() {
   }
 
   const currentPhase =
-    (profile?.currentPhase as PhaseId | undefined) ?? "phase:fundamentals";
+    (profile?.currentPhase as PhaseId | undefined) ?? "phase:ai-fundamentals";
   const phaseMeta = PHASES.find((p) => p.id === currentPhase) ?? PHASES[0];
 
   const handleSignOut = async () => {
@@ -263,7 +263,7 @@ function PhaseStrip({
             title={`${p.label} · ${p.window}`}
           >
             <span className="font-bold">{p.number}</span>
-            <span className="hidden xl:inline">{p.name.slice(0, 6)}</span>
+            <span className="hidden xl:inline">{p.slug.slice(0, 6)}</span>
           </div>
         );
       })}
