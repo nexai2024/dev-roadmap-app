@@ -14,6 +14,7 @@ import {
   Settings,
   Shield,
 } from "lucide-react";
+// Bump: force Vite HMR re-bundle for icon + Phase.slug changes.
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
