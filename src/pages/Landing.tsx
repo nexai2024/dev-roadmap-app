@@ -41,7 +41,7 @@ export default function Landing() {
       <header className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link to="/" className="font-mono font-bold tracking-tight nb-press">
-            INDIE·DEV·BOSS
+            PROTOCOL·100
             <span className="nb-hand text-base text-primary ml-1">100-day</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">
@@ -80,7 +80,7 @@ export default function Landing() {
       <section className="max-w-7xl mx-auto px-6 pt-16 pb-12 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
         <div className="relative">
           <p className="nb-tape inline-block px-2 py-0.5 text-[11px] uppercase tracking-widest font-mono rotate-[-1deg] mb-4">
-            Day 01 · The Indie Dev Boss Protocol · 100-day challenge
+            Day 01 · Protocol100 · AI-accelerated 100-day challenge
           </p>
           <h1 className="font-mono text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight">
             <span className="nb-hand text-primary text-5xl md:text-6xl lg:text-7xl">
@@ -511,7 +511,7 @@ export default function Landing() {
 
       <footer className="border-t border-border py-6 px-6">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-4 justify-between text-xs text-muted-foreground">
-          <span>© INDIE·DEV·BOSS · 100-day challenge · Pieter Levels doctrine</span>
+          <span>          © Protocol100 · AI-accelerated 100-day challenge · Pieter Levels doctrine</span>
           <span className="font-mono">
             [{` `}
             <a href="https://makebook.io" className="underline" target="_blank" rel="noreferrer">

@@ -96,9 +96,9 @@ export default function DashboardLayout() {
             className="nb-press inline-flex items-baseline gap-1 text-left"
           >
             <span className="font-mono font-bold text-sm tracking-tight">
-              INDIE·DEV·BOSS
+              PROTOCOL·100
             </span>
-            <span className="nb-hand text-base text-primary">v1</span>
+            <span className="nb-hand text-base text-primary">100d</span>
           </Link>
           <p className="mt-1 text-[11px] uppercase tracking-widest text-muted-foreground">
             The protocol notebook
@@ -173,7 +173,7 @@ export default function DashboardLayout() {
                 to="/"
                 className="font-mono font-bold text-sm tracking-tight nb-press"
               >
-                INDIE·DEV·BOSS
+                PROTOCOL·100
               </Link>
             </div>
 

@@ -1,4 +1,4 @@
-// The Indie Dev Boss Protocol — 100-day challenge (AI-accelerated)
+// Protocol100 — 100-day AI-accelerated indie-dev challenge
 // Source of truth for every page in the dashboard.
 
 export type PhaseId =
@@ -130,8 +130,8 @@ export interface Prerequisite {
 // =====================================================
 
 export const PHILOSOPHY = {
-  title: "The Indie Dev Boss Protocol",
-  shortLabel: "Pieter Levels doctrine",
+  title: "Protocol100",
+  shortLabel: "Protocol100 doctrine",
   pillars: [
     "Revenue is the only KPI that matters.",
     "Tutorials are procrastination.",
