@@ -37,9 +37,18 @@ export default function TodayPage() {
     return Math.max(1, diff + 1);
   }, [profile?.startedAt]);
 
-  // The current schedule entry — from Month 1 only (other months: blank slate)
-  const month1Index = Math.min(today - 1, MONTH_1_SCHEDULE.length - 1);
-  const scheduleEntry = today <= MONTH_1_SCHEDULE.length ? MONTH_1_SCHEDULE[month1Index] : null;
+  const currentPhase =
+    (profile?.currentPhase as PhaseId | undefined) ?? "phase:fundamentals";
+  const phaseMeta = PHASES.find((p) => p.id === currentPhase) ?? PHASES[0];
+
+  // The current schedule entry — Month 1 has the only detailed daily plan.
+  // Day 31+: we fall back to phase-level guidance (Months 2/3 schedules
+  // arrive when the user supplies them).
+  const inMonthOne =
+    currentPhase === "phase:fundamentals" && today <= MONTH_1_SCHEDULE.length;
+  const scheduleEntry = inMonthOne
+    ? MONTH_1_SCHEDULE[today - 1]
+    : null;
 
   // Form state — bounded by today's existing log or defaults
   const [hoursCoded, setHoursCoded] = useState(0);
@@ -73,10 +82,6 @@ export default function TodayPage() {
   }, [todayLog]);
 
   // First-time-setup gate is handled in DashboardLayout; this is a safety net.
-
-  const currentPhase =
-    (profile?.currentPhase as PhaseId | undefined) ?? "phase:fundamentals";
-  const phaseMeta = PHASES.find((p) => p.id === currentPhase) ?? PHASES[0];
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -112,8 +117,8 @@ export default function TodayPage() {
   return (
     <div className="space-y-6">
       <Header
-        title={`Good ${greeting()}, ${profile?.displayName ?? user?.name ?? "founder"}.`}
-        subtitle={`Day ${today} · Phase ${phaseMeta.number} · ${phaseMeta.label} · ${phaseMeta.window}`}
+        title={`Day ${today} of 100 · Good ${greeting()}, ${profile?.displayName ?? user?.name ?? "founder"}.`}
+        subtitle={`Phase ${phaseMeta.number} · ${phaseMeta.label} · ${phaseMeta.window} · ${inMonthOne ? "Month 1 detailed plan" : "Phase-level plan"}`}
       />
 
       <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-4">
@@ -143,10 +148,29 @@ export default function TodayPage() {
               ))}
             </ol>
           ) : (
-            <p className="text-sm text-muted-foreground mt-4">
-              You've graduated past Month 1. Use the Actions page to pick
-              where you are in the protocol.
-            </p>
+            <div className="mt-4 nb-card p-3 bg-[color:var(--chart-1)]/5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                Phase-level guidance
+              </p>
+              <p className="text-sm mt-1.5 leading-relaxed">
+                {phaseMeta.internals.split(".")[0]}.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Day {today} is in phase {phaseMeta.number}: <span className="font-mono">{phaseMeta.label}</span>. Open the{" "}
+                <a href="/dashboard/actions" className="underline">
+                  Actions page
+                </a>{" "}
+                to find today's deliverable for this phase, and the{" "}
+                <a href="/dashboard/phases" className="underline">
+                  Phases page
+                </a>{" "}
+                for the exit gate.
+              </p>
+              <p className="nb-hand text-base text-muted-foreground mt-2">
+                "Phone in another room. Open the tutorial. Ship ugly."
+              </p>
+            </div>
           )}
 
           <div className="mt-5 pt-4 border-t border-dashed border-border">
@@ -154,7 +178,8 @@ export default function TodayPage() {
               Ship by EOD
             </p>
             <p className="text-sm mt-1 leading-relaxed">
-              {scheduleEntry?.ship ?? "Push a commit. Log a row. Read 30 min of docs."}
+              {scheduleEntry?.ship ??
+                `Push a commit. Log a row. Read 30 min of docs. Tick today's action as 'in_progress'.`}
             </p>
           </div>
 

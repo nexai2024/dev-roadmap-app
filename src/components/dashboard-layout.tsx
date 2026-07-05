@@ -6,12 +6,13 @@ import {
   ClipboardList,
   Flag,
   Home,
+  KeyRound,
   Layers,
   Library,
   ListChecks,
   Loader,
-  Shield,
   Settings,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,12 +23,13 @@ import { PHASES, type PhaseId } from "@/data/protocol";
 
 const NAV = [
   { to: "/dashboard", icon: Home, label: "Today", end: true },
+  { to: "/dashboard/prereqs", icon: KeyRound, label: "Prerequisites" },
   { to: "/dashboard/phases", icon: Layers, label: "Phases" },
   { to: "/dashboard/actions", icon: ClipboardList, label: "Actions" },
   { to: "/dashboard/inputs", icon: ListChecks, label: "Daily Inputs" },
   { to: "/dashboard/milestones", icon: Flag, label: "Milestones" },
   { to: "/dashboard/logbook", icon: BookOpen, label: "Logbook" },
-  { to: "/dashboard/review", icon: CalendarRange, label: "Weekly Review" },
+  { to: "/dashboard/review", icon: CalendarRange, label: "30-day review" },
   { to: "/dashboard/rules", icon: Shield, label: "Hard Rules" },
   { to: "/dashboard/resources", icon: Library, label: "Resources" },
 ];
@@ -179,7 +181,11 @@ export default function DashboardLayout() {
             <div className="flex-1" />
 
             <div className="hidden sm:flex items-center gap-2">
-              <KpiPill label="MRR" value={`$${stats?.totalMRR ?? 0}`} accent="bg-[color:var(--chart-3)]" />
+              <KpiPill
+                label={`Day ${profile?.currentDay ?? 1}/100`}
+                value={`$${stats?.totalMRR ?? 0}`}
+                accent="bg-[color:var(--chart-3)]"
+              />
               <KpiPill label="Streak" value={`${stats?.streakDays ?? 0}d`} accent="bg-[color:var(--chart-4)]" />
               <KpiPill label="Ships" value={`${stats?.totalCommits ?? 0}`} accent="bg-[color:var(--chart-1)]" />
             </div>

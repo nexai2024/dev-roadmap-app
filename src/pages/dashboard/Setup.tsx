@@ -99,7 +99,7 @@ export default function SetupPage() {
               You start here
             </p>
             <p className="font-mono text-sm mt-1">
-              {PHASES[0].label} · {PHASES[0].window} · Day 1 of month 1
+              {PHASES[0].label} · {PHASES[0].window} · Day 1 of 100
             </p>
             <p className="nb-hand text-base text-muted-foreground mt-2">
               "Phone in another room. Open CS50. Code for ninety minutes."

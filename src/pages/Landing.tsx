@@ -7,12 +7,20 @@ import {
   CheckCircle2,
   ClipboardList,
   Flag,
+  KeyRound,
   ListChecks,
   Loader,
   Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PHASES, PHILOSOPHY, KEY_ACTIONS, OUTPUTS, HARD_RULES, NON_NEGOTIABLES } from "@/data/protocol";
+import {
+  PHASES,
+  PHILOSOPHY,
+  KEY_ACTIONS,
+  OUTPUTS,
+  HARD_RULES,
+  NON_NEGOTIABLES,
+} from "@/data/protocol";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Landing() {
@@ -36,6 +44,7 @@ export default function Landing() {
             <a href="#phases" className="px-3 py-1 hover:underline">Phases</a>
             <a href="#actions" className="px-3 py-1 hover:underline">Actions</a>
             <a href="#inside" className="px-3 py-1 hover:underline">Inside</a>
+            <a href="#prereqs" className="px-3 py-1 hover:underline">Prereqs</a>
             <a href="#rules" className="px-3 py-1 hover:underline">Hard Rules</a>
           </nav>
           <div className="flex-1" />
@@ -66,7 +75,7 @@ export default function Landing() {
       <section className="max-w-7xl mx-auto px-6 pt-16 pb-12 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
         <div className="relative">
           <p className="nb-tape inline-block px-2 py-0.5 text-[11px] uppercase tracking-widest font-mono rotate-[-1deg] mb-4">
-            Day 01 · The Indie Dev Boss Protocol
+            Day 01 · The Indie Dev Boss Protocol · 100-day challenge
           </p>
           <h1 className="font-mono text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight">
             Zero → MRR, <br />
@@ -76,11 +85,12 @@ export default function Landing() {
           </h1>
 
           <p className="text-muted-foreground mt-6 max-w-xl text-base leading-relaxed">
-            A {PHILOSOPHY.horizon}. Twelve months. Six phases. Eleven
-            actions. Thirty days of hour-by-hour drills for Month 1.
-            The {PHILOSOPHY.shortLabel}: revenue is the only KPI that
-            matters. Tutorials are procrastination.{" "}
-            <span className="nb-highlight">Ship ugly, ship weekly, charge from day one.</span>
+            <span className="nb-highlight">{PHILOSOPHY.horizon}</span> Six
+            phases. Eleven actions. Thirty days of hour-by-hour drills in
+            Month 1, the rest compressed into 70 days of shipping. The{" "}
+            {PHILOSOPHY.shortLabel}: revenue is the only KPI that matters.
+            Tutorials are procrastination. Ship ugly, ship weekly, charge
+            from Day 76.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-8">
@@ -98,7 +108,9 @@ export default function Landing() {
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link to="/auth?mode=sign-in">I already have a notebook</Link>
+                  <Link to="/dashboard/prereqs">
+                    See prerequisites <KeyRound className="h-4 w-4 ml-1" />
+                  </Link>
                 </Button>
               </>
             )}
@@ -127,15 +139,29 @@ export default function Landing() {
               <span className="nb-stamp text-destructive">Day 1</span>
             </div>
             <h3 className="font-mono text-xl mt-2">Your first action.</h3>
-            <p className="text-sm text-muted-foreground mt-1 italic">
+            <p className="text-[10px] uppercase tracking-widest text-primary font-mono mt-1">
+              Day 1 of 100
+            </p>
+            <p className="text-sm text-muted-foreground mt-2 italic">
               "Phone in another room. Open the tutorial. Code for ninety minutes."
             </p>
 
             <ol className="mt-5 space-y-3 text-sm">
-              <Step n={1} text="Create your free notebook account below." />
-              <Step n={2} text="Pick your Day 1. Notify: Phase 01 — Fundamentals." />
-              <Step n={3} text="Open CS50x, watch Lecture 0, post your first #buildinpublic." />
-              <Step n={4} text="Push a commit. Log it. Check in. Tomorrow, ship again." />
+              <Step
+                n={1}
+                text={
+                  <>
+                    Open the{" "}
+                    <Link to="/dashboard/prereqs" className="underline">
+                      Prerequisites
+                    </Link>{" "}
+                    page, sign up for CS50x and the free stack.
+                  </>
+                }
+              />
+              <Step n={2} text="Set Day 1. Open CS50x Lecture 0, post your first #buildinpublic." />
+              <Step n={3} text="Push a commit. Log it. Tomorrow, ship again. Repeat for 100 days." />
+              <Step n={4} text="Day 100 = first $1 MRR on Product Hunt. Day 200 = $1,000 MRR." />
             </ol>
 
             <div className="mt-6 pt-4 border-t border-dashed border-border">
@@ -155,7 +181,7 @@ export default function Landing() {
 
           {/* Ink corner */}
           <div className="absolute -bottom-3 -right-3 nb-card nb-tape px-3 py-1 font-mono text-xs rotate-[3deg]">
-            RFI: phone in another room
+            RFI: 100 days
           </div>
         </div>
       </section>
@@ -166,7 +192,7 @@ export default function Landing() {
           <SectionHeader
             kicker="Architecture"
             title="Six sequential phases. Hard exit gates."
-            description="Every phase feeds the next. You can't skip an exit gate, even if you feel ready."
+            description="Every phase feeds the next. You can't skip an exit gate, even if you feel ready. 100 days = first $1 MRR by Day 100; 200 days = $1,000+ MRR."
           />
           <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {PHASES.map((p, idx) => (
@@ -205,7 +231,7 @@ export default function Landing() {
         <SectionHeader
           kicker="Key Actions"
           title="Eleven numbered actions. Each has a deliverable and a success criteria."
-          description="Logbook entries are pushed to your dashboard. The protocol is your accountability engine."
+          description="Day-by-day deliverables are wired into your dashboard. Every action shows the resource, the deliverable, and the success criteria."
         />
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {KEY_ACTIONS.slice(0, 6).map((a, i) => (
@@ -213,11 +239,25 @@ export default function Landing() {
               <div className="font-mono text-2xl font-bold text-primary tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </div>
-              <div>
+              <div className="min-w-0">
                 <h4 className="font-mono text-sm leading-tight">{a.title}</h4>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {a.phaseId.replace("phase:", "")} · {a.window}
                 </p>
+                {a.resource && (
+                  <a
+                    className="text-[11px] mt-1 underline block truncate"
+                    href={
+                      a.resource.startsWith("http")
+                        ? a.resource
+                        : `https://${a.resource.split(" ")[0]}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {a.resource}
+                  </a>
+                )}
               </div>
             </div>
           ))}
@@ -234,21 +274,63 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 py-16">
           <SectionHeader
             kicker="What's inside"
-            title="Eight pages of your engineer's grid notebook."
-            description="Every page renders data from the protocol. Every input is logged. Every milestone is verified."
+            title="Ten pages of your engineer's grid notebook."
+            description="Plus a Prerequisites page that lists every account and tool you need to sign up for before Day 1, with direct signup links."
           />
           <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <InsideCard icon={ClipboardList} title="Today" desc="The current day's pre-loaded schedule + quick log form." />
-            <InsideCard icon={Flag} title="Phases" desc="Six phases with status, internals, mechanics, exit gates." />
-            <InsideCard icon={ListChecks} title="Daily Inputs" desc="Six non-negotiables: code, ship, build-in-public, learn, talk, track." />
-            <InsideCard icon={CheckCircle2} title="Milestones" desc="Six outputs with verification. CS50 cert → $1k MRR." />
-            <InsideCard icon={BookOpen} title="Logbook" desc="Every daily log you've ever filed. Engineer-grade history." />
-            <InsideCard icon={CalendarRange} title="Weekly Review" desc="Sunday 18:00 ritual. Compute. Post. Iterate." />
-            <InsideCard icon={Shield} title="Hard Rules" desc="No tutorial after Month 6. Charge from day one. One product." />
-            <InsideCard icon={BookOpen} title="Resources" desc="CS50, Odin, Full Stack Open, Next, Supabase, Stripe, Resend, PostHog." />
+            <InsideCard
+              icon={ClipboardList}
+              title="Today"
+              desc="Day X of 100, current phase, schedule (Month 1 detail) or phase guidance + quick log form."
+            />
+            <InsideCard
+              icon={Flag}
+              title="Phases"
+              desc="Six phases with day windows, internals, mechanics, exit gates, and a current-phase switch."
+            />
+            <InsideCard
+              icon={ListChecks}
+              title="Daily Inputs"
+              desc="Six non-negotiables: code, ship, build-in-public, learn, talk, track. 7-day tally per input."
+            />
+            <InsideCard
+              icon={CheckCircle2}
+              title="Milestones"
+              desc="Six outputs on the 100-day timeline. CS50 cert → $1k MRR. Verification URL per milestone."
+            />
+            <InsideCard
+              icon={BookOpen}
+              title="Logbook"
+              desc="Every daily log, newest first. Engineer-grade history with totals + delete confirm."
+            />
+            <InsideCard
+              icon={CalendarRange}
+              title="30-day review"
+              desc="Every 30 days, 2 hours. Compute MRR / churn / NPS. Post the post-mortem to X."
+            />
+            <InsideCard
+              icon={KeyRound}
+              title="Prerequisites"
+              desc="Signup links for every account, tool, community, and book the protocol needs. Free + paid."
+            />
+            <InsideCard
+              icon={Shield}
+              title="Hard Rules"
+              desc="No tutorial after Day 75. Charge from Day 76. One product, 100 days."
+            />
+            <InsideCard
+              icon={BookOpen}
+              title="Resources"
+              desc="CS50, Odin, Full Stack Open, Next, Supabase, Stripe, Resend, PostHog, Cursor — every link live."
+            />
+            <InsideCard
+              icon={BookOpen}
+              title="Engineer's logbook"
+              desc="Engineer's grid theme: cream paper, red margin line, IBM Plex Mono, Caveat annotations, tape and stamp."
+            />
           </div>
 
-          <div className="mt-12 grid lg:grid-cols-2 gap-4">
+          <div id="rules" className="mt-12 grid lg:grid-cols-2 gap-4">
             <div className="nb-card p-6">
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
                 Outputs tracked
@@ -260,7 +342,7 @@ export default function Landing() {
                     <div>
                       <p className="font-mono text-sm">{o.label}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        Phase {o.phase} · {o.verification}
+                        Phase {o.phase} · Day {o.day} · {o.verification}
                       </p>
                     </div>
                   </li>
@@ -277,26 +359,85 @@ export default function Landing() {
                     <span className="nb-stamp text-primary shrink-0">{i + 1}</span>
                     <div>
                       <p className="font-mono text-sm">{r.text}</p>
-                      <p className="nb-hand text-base text-muted-foreground mt-0.5">{r.annotation}</p>
+                      <p className="nb-hand text-base text-muted-foreground mt-0.5">
+                        {r.annotation}
+                      </p>
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
+
+          <div id="prereqs" className="mt-12 nb-card p-6 sm:p-8">
+            <div className="flex flex-wrap items-baseline gap-3 justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Sign up before Day 1
+                </p>
+                <h3 className="font-mono text-xl mt-1">5 free accounts.</h3>
+              </div>
+              <div className="nb-tape px-2 py-0.5 font-mono text-[11px] uppercase tracking-widest">
+                Day -7 → Day -1
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3 max-w-2xl">
+              These five accounts are the floor. Free. None takes more than 10 minutes. The full list of 25+ services (free + paid) lives on the{" "}
+              <Link to="/dashboard/prereqs" className="underline">
+                Prerequisites page
+              </Link>{" "}
+              inside the notebook.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                {
+                  name: "CS50x",
+                  url: "https://cs50.harvard.edu/x/2025",
+                },
+                {
+                  name: "X / Twitter",
+                  url: "https://twitter.com/i/flow/signup",
+                },
+                { name: "GitHub", url: "https://github.com/signup" },
+                {
+                  name: "Makerlog",
+                  url: "https://getmakerlog.com",
+                },
+                {
+                  name: "Google Account",
+                  url: "https://accounts.google.com/signup",
+                },
+              ].map((p) => (
+                <a
+                  key={p.name}
+                  href={p.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="nb-press text-xs font-mono px-2.5 py-1 rounded-sm border border-border hover:bg-sidebar-accent"
+                >
+                  {p.name} ↗
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section id="rules" className="max-w-7xl mx-auto px-6 py-20 text-center">
+      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
         <p className="nb-tape inline-block px-2 py-0.5 text-[11px] uppercase tracking-widest font-mono rotate-[1deg] mb-4">
           Open the notebook
         </p>
         <h2 className="font-mono text-3xl md:text-4xl font-semibold leading-tight max-w-2xl mx-auto">
-          Day 1 is staring at you. <span className="nb-hand text-primary text-4xl md:text-5xl">Take it.</span>
+          100 days is staring at you.{" "}
+          <span className="nb-hand text-primary text-4xl md:text-5xl">
+            Take Day 1.
+          </span>
         </h2>
         <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-          Free forever. Multi-user. Engineer's grid notebook. Tracks every commit, every shipped day, every paid customer.
+          Free forever. Multi-user. Engineer's grid notebook. Tracks every
+          commit, every shipped day, every paid customer — on the way to $1
+          MRR by Day 100 and $1k by Day 200.
         </p>
         <div className="flex flex-wrap justify-center gap-3 mt-8">
           {isAuthenticated ? (
@@ -317,15 +458,31 @@ export default function Landing() {
 
       <footer className="border-t border-border py-6 px-6">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-4 justify-between text-xs text-muted-foreground">
-          <span>© INDIE·DEV·BOSS · Pieter Levels doctrine</span>
-          <span className="font-mono">[ makebook.io · cs50.harvard.edu/x/2025 ]</span>
+          <span>© INDIE·DEV·BOSS · 100-day challenge · Pieter Levels doctrine</span>
+          <span className="font-mono">
+            [{" "}
+            <a href="https://makebook.io" className="underline" target="_blank" rel="noreferrer">
+              makebook.io
+            </a>{" "}
+            ·{" "}
+            <a href="https://cs50.harvard.edu/x/2025" className="underline" target="_blank" rel="noreferrer">
+              cs50.harvard.edu/x/2025
+            </a>{" "}
+            ]
+          </span>
         </div>
       </footer>
     </motion.div>
   );
 }
 
-function Step({ n, text }: { n: number; text: string }) {
+function Step({
+  n,
+  text,
+}: {
+  n: number;
+  text: React.ReactNode;
+}) {
   return (
     <li className="flex gap-3">
       <span className="font-mono font-bold text-primary tabular-nums shrink-0">
