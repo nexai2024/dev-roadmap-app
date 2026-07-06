@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { PHASES, type PhaseId } from "@/data/protocol";
+import { TrialGate } from "./TrialGate";
 
 const NAV = [
   { to: "/dashboard", icon: Home, label: "Today", end: true },
@@ -187,6 +188,13 @@ export default function DashboardLayout() {
             <div className="flex-1" />
 
             <div className="hidden sm:flex items-center gap-2">
+              {profile?.startedAt && !profile?.isPaid && (
+                <KpiPill
+                  label="Trial"
+                  value={`${Math.min(3, Math.max(1, Math.floor((Date.now() - profile.startedAt) / (1000 * 60 * 60 * 24)) + 1))}/3 Days`}
+                  accent="bg-amber-500"
+                />
+              )}
               <KpiPill
                 label={`Day ${profile?.currentDay ?? 1}/100`}
                 value={`$${stats?.totalMRR ?? 0}`}
@@ -234,7 +242,9 @@ export default function DashboardLayout() {
 
         <main className="flex-1 px-4 sm:px-8 py-6 sm:py-10 nb-margin">
           <div className="max-w-5xl mx-auto">
-            <Outlet />
+            <TrialGate profile={profile ?? null}>
+              <Outlet />
+            </TrialGate>
           </div>
         </main>
       </div>
