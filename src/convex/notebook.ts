@@ -2,7 +2,6 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import type { Doc, Id } from "./_generated/dataModel";
 
 // =============================================
 // PROFILE
@@ -21,6 +20,7 @@ export const currentProfile = query({
       currentDay: v.optional(v.number()),
       bio: v.optional(v.string()),
       twitterHandle: v.optional(v.string()),
+      isPaid: v.optional(v.boolean()),
     }),
     v.null(),
   ),
@@ -42,7 +42,24 @@ export const currentProfile = query({
       currentDay: user.currentDay,
       bio: user.bio,
       twitterHandle: user.twitterHandle,
+      isPaid: user.isPaid,
     };
+  },
+});
+
+export const unlockProtocol = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) throw new Error("No user record found");
+    await ctx.db.patch(user._id, { isPaid: true });
+    return null;
   },
 });
 
@@ -99,7 +116,7 @@ export const completeSetup = mutation({
     if (!user) throw new Error("No user record found");
     await ctx.db.patch(user._id, {
       displayName: args.displayName,
-      startedAt: args.startedAt,
+      startedAt: user.startedAt ?? args.startedAt,
       currentPhase: args.currentPhase,
       currentDay: args.currentDay,
       bio: args.bio,
@@ -270,6 +287,15 @@ export const upsertLog = mutation({
       .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
       .first();
     if (!user) throw new Error("No user record found");
+
+    // Trial gating: 3 days free.
+    if (!user.isPaid && user.startedAt) {
+      const diff = Math.floor((Date.now() - user.startedAt) / (1000 * 60 * 60 * 24));
+      const currentDay = Math.max(1, diff + 1);
+      if (currentDay > 3) {
+        throw new Error("Trial expired. Please unlock the protocol to continue logging.");
+      }
+    }
 
     const existing = await ctx.db
       .query("dailyLogs")
@@ -869,7 +895,7 @@ export const aggregateStats = query({
     now.setHours(0, 0, 0, 0);
 
     // Find the start of the streak (anchor)
-    let current = new Date(now);
+    const current = new Date(now);
     let anchorFound = false;
 
     while (true) {
@@ -893,7 +919,7 @@ export const aggregateStats = query({
 
     if (anchorFound) {
       while (true) {
-        const dateStr = current.toISOString().slice(0, 10);
+        const dateStr = (current as Date).toISOString().slice(0, 10);
         const isSaturday = current.getDay() === 6;
 
         if (logDates.has(dateStr)) {
