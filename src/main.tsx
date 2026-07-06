@@ -26,6 +26,9 @@ const MilestonesPage = lazy(() => import("./pages/dashboard/Milestones"));
 const LogbookPage = lazy(() => import("./pages/dashboard/Logbook"));
 const ReviewPage = lazy(() => import("./pages/dashboard/Review"));
 const RulesPage = lazy(() => import("./pages/dashboard/Rules"));
+const MonthlyReviewPage = lazy(() => import("./pages/dashboard/MonthlyReview"));
+const DistributionPage = lazy(() => import("./pages/dashboard/Distribution"));
+const ConciergePage = lazy(() => import("./pages/dashboard/Concierge"));
 const ResourcesPage = lazy(() => import("./pages/dashboard/Resources"));
 const SetupPage = lazy(() => import("./pages/dashboard/Setup"));
 const PrereqsPage = lazy(() => import("./pages/dashboard/Prereqs"));
@@ -84,6 +87,9 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="milestones" element={<MilestonesPage />} />
                 <Route path="logbook" element={<LogbookPage />} />
                 <Route path="review" element={<ReviewPage />} />
+                <Route path="monthly-review" element={<MonthlyReviewPage />} />
+                <Route path="distribution" element={<DistributionPage />} />
+                <Route path="concierge" element={<ConciergePage />} />
                 <Route path="rules" element={<RulesPage />} />
                 <Route path="resources" element={<ResourcesPage />} />
                 <Route path="prereqs" element={<PrereqsPage />} />

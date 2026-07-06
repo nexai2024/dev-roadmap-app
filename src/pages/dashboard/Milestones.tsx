@@ -7,61 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Per-user milestone proof stored on a dailyLog entry keyed by `notes` line
-// "milestone:<id>:<status>:<url>" — kept simple, no new table.
-
 export default function MilestonesPage() {
-  const logs = useQuery(api.notebook.listLogs, { limit: 200 });
-  const upsertLog = useMutation(api.notebook.upsertLog);
+  const milestones = useQuery(api.notebook.listMilestones);
+  const setMilestoneStatus = useMutation(api.notebook.setMilestoneStatus);
   const [busy, setBusy] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
-  // Parse stored proof from the most recent log line containing "milestone:<id>:"
   const proofFor = (id: string) => {
-    if (!logs) return "";
-    for (const log of logs) {
-      if (!log.notes) continue;
-      const lines = log.notes.split("\n");
-      for (const line of lines) {
-        const m = line.match(new RegExp(`^milestone:${id}:(.*):(.*)$`));
-        if (m) return m[2] ?? "";
-      }
-    }
-    return "";
+    return milestones?.find((m) => m.milestoneId === id)?.proofUrl ?? "";
   };
 
   const statusFor = (id: string): "not_started" | "in_progress" | "completed" => {
-    if (!logs) return "not_started";
-    for (const log of logs) {
-      if (!log.notes) continue;
-      const lines = log.notes.split("\n");
-      for (const line of lines) {
-        const m = line.match(new RegExp(`^milestone:${id}:(.*):(.*)$`));
-        if (m) {
-          const value = m[1] as "not_started" | "in_progress" | "completed";
-          return value;
-        }
-      }
-    }
-    return "not_started";
+    const m = milestones?.find((ms) => ms.milestoneId === id);
+    if (!m) return "not_started";
+    return m.status as "not_started" | "in_progress" | "completed";
   };
 
   const setStatus = async (id: string, status: "not_started" | "in_progress" | "completed") => {
     setBusy(id);
     try {
       const url = drafts[id] ?? proofFor(id);
-      const marker = `milestone:${id}:${status}:${url}`;
-      const today = {
-        date: new Date().toISOString().slice(0, 10),
-        phaseId: "phase:growth",
-        hoursCoded: 0,
-        commits: 0,
-        customersContacted: 0,
-        mrrUsd: 0,
-        inputsDone: [],
-        notes: marker,
-      };
-      await upsertLog(today);
+      await setMilestoneStatus({
+        milestoneId: id,
+        status,
+        proofUrl: url || undefined,
+      });
     } finally {
       setBusy(null);
     }
@@ -84,6 +54,11 @@ export default function MilestonesPage() {
       </div>
 
       <div className="space-y-3">
+        {milestones === undefined && (
+          <div className="nb-card p-10 text-center animate-pulse text-muted-foreground font-mono">
+            Loading milestones...
+          </div>
+        )}
         {OUTPUTS.map((m) => {
           const status = statusFor(m.id);
           const proof = proofFor(m.id);
