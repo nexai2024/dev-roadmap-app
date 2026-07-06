@@ -1,7 +1,8 @@
-// Convex queries and mutations for the Indie Dev Boss Protocol notebook
+// Convex queries and mutations for the Protocol100 notebook
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 // =============================================
 // PROFILE
@@ -25,12 +26,9 @@ export const currentProfile = query({
     v.null(),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
     if (!user) return null;
     return {
       _id: user._id,
@@ -51,12 +49,9 @@ export const unlockProtocol = mutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     await ctx.db.patch(user._id, { isPaid: true });
     return null;
@@ -71,12 +66,9 @@ export const aggregateMonthStats = query({
     mrr: v.number(),
   }),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return { hours: 0, commits: 0, mrr: 0 };
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return { hours: 0, commits: 0, mrr: 0 };
+    const user = await ctx.db.get(userId);
     if (!user) return { hours: 0, commits: 0, mrr: 0 };
 
     const startOfMonth = `${args.month}-01`;
@@ -107,12 +99,9 @@ export const completeSetup = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     await ctx.db.patch(user._id, {
       displayName: args.displayName,
@@ -136,12 +125,9 @@ export const updateProfile = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     const { displayName, bio, twitterHandle, currentPhase, currentDay } = args;
     await ctx.db.patch(user._id, {
@@ -187,12 +173,9 @@ export const todayLog = query({
     v.null(),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
     if (!user) return null;
     const date = new Date().toISOString().slice(0, 10);
     return await ctx.db
@@ -225,12 +208,9 @@ export const listLogs = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     const logs = await ctx.db
       .query("dailyLogs")
@@ -280,12 +260,9 @@ export const upsertLog = mutation({
   },
   returns: v.id("dailyLogs"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
 
     // Trial gating: 3 days free.
@@ -332,15 +309,12 @@ export const deleteLog = mutation({
   args: { id: v.id("dailyLogs") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
     const log = await ctx.db.get(args.id);
     if (!log) return null;
     // ownership check
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const user = await ctx.db.get(userId);
     if (!user || log.userId !== user._id) throw new Error("Forbidden");
     await ctx.db.delete(args.id);
     return null;
@@ -365,12 +339,9 @@ export const allActionProgress = query({
     }),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     const rows = await ctx.db
       .query("keyActionProgress")
@@ -401,12 +372,9 @@ export const setActionStatus = mutation({
   },
   returns: v.id("keyActionProgress"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
 
     const existing = await ctx.db
@@ -462,12 +430,9 @@ export const listMilestones = query({
     }),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     return await ctx.db
       .query("milestones")
@@ -488,12 +453,9 @@ export const setMilestoneStatus = mutation({
   },
   returns: v.id("milestones"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
 
     const existing = await ctx.db
@@ -543,12 +505,9 @@ export const listConciergeOrders = query({
     }),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     return await ctx.db
       .query("conciergeOrders")
@@ -569,12 +528,9 @@ export const logConciergeOrder = mutation({
   },
   returns: v.id("conciergeOrders"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     return await ctx.db.insert("conciergeOrders", {
       userId: user._id,
@@ -592,12 +548,9 @@ export const updateConciergeOrder = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
 
     const order = await ctx.db.get(args.id);
@@ -627,12 +580,9 @@ export const listOutreachLogs = query({
     }),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     return await ctx.db
       .query("outreachLogs")
@@ -652,12 +602,9 @@ export const logOutreach = mutation({
   },
   returns: v.id("outreachLogs"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     return await ctx.db.insert("outreachLogs", {
       userId: user._id,
@@ -684,12 +631,9 @@ export const listMonthlyReviews = query({
     }),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     return await ctx.db
       .query("monthlyReviews")
@@ -710,12 +654,9 @@ export const createMonthlyReview = mutation({
   },
   returns: v.id("monthlyReviews"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     return await ctx.db.insert("monthlyReviews", {
       userId: user._id,
@@ -745,12 +686,9 @@ export const listReviews = query({
     }),
   ),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
     if (!user) return [];
     const rows = await ctx.db
       .query("weeklyReviews")
@@ -785,12 +723,9 @@ export const createReview = mutation({
   },
   returns: v.id("weeklyReviews"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
     return await ctx.db.insert("weeklyReviews", {
       userId: user._id,
@@ -803,14 +738,11 @@ export const deleteReview = mutation({
   args: { id: v.id("weeklyReviews") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
     const row = await ctx.db.get(args.id);
     if (!row) return null;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const user = await ctx.db.get(userId);
     if (!user || row.userId !== user._id) throw new Error("Forbidden");
     await ctx.db.delete(args.id);
     return null;
@@ -835,8 +767,8 @@ export const aggregateStats = query({
     actionsInProgress: v.number(),
   }),
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
       return {
         totalCommits: 0,
         totalHours: 0,
@@ -849,10 +781,7 @@ export const aggregateStats = query({
         actionsInProgress: 0,
       };
     }
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
-      .first();
+    const user = await ctx.db.get(userId);
     if (!user) {
       return {
         totalCommits: 0,
