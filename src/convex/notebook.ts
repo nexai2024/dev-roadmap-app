@@ -46,6 +46,39 @@ export const currentProfile = query({
   },
 });
 
+export const aggregateMonthStats = query({
+  args: { month: v.string() }, // YYYY-MM
+  returns: v.object({
+    hours: v.number(),
+    commits: v.number(),
+    mrr: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { hours: 0, commits: 0, mrr: 0 };
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) return { hours: 0, commits: 0, mrr: 0 };
+
+    const startOfMonth = `${args.month}-01`;
+    const endOfMonth = `${args.month}-31`;
+
+    const monthLogs = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", user._id).gte("date", startOfMonth).lte("date", endOfMonth),
+      )
+      .collect();
+    return {
+      hours: monthLogs.reduce((s, l) => s + l.hoursCoded, 0),
+      commits: monthLogs.reduce((s, l) => s + l.commits, 0),
+      mrr: monthLogs.length ? Math.max(...monthLogs.map((l) => l.mrrUsd)) : 0,
+    };
+  },
+});
+
 export const completeSetup = mutation({
   args: {
     displayName: v.string(),
@@ -388,6 +421,284 @@ export const setActionStatus = mutation({
 });
 
 // =============================================
+// MILESTONES
+// =============================================
+
+export const listMilestones = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("milestones"),
+      milestoneId: v.string(),
+      status: v.string(),
+      proofUrl: v.optional(v.string()),
+      completedAt: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) return [];
+    return await ctx.db
+      .query("milestones")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+  },
+});
+
+export const setMilestoneStatus = mutation({
+  args: {
+    milestoneId: v.string(),
+    status: v.union(
+      v.literal("not_started"),
+      v.literal("in_progress"),
+      v.literal("completed"),
+    ),
+    proofUrl: v.optional(v.string()),
+  },
+  returns: v.id("milestones"),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) throw new Error("No user record found");
+
+    const existing = await ctx.db
+      .query("milestones")
+      .withIndex("by_user_milestone", (q) =>
+        q.eq("userId", user._id).eq("milestoneId", args.milestoneId),
+      )
+      .first();
+
+    const completedAt =
+      args.status === "completed" ? Date.now() : undefined;
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        status: args.status,
+        proofUrl: args.proofUrl,
+        completedAt: completedAt ?? existing.completedAt,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("milestones", {
+      userId: user._id,
+      milestoneId: args.milestoneId,
+      status: args.status,
+      proofUrl: args.proofUrl,
+      completedAt,
+    });
+  },
+});
+
+// =============================================
+// CONCIERGE & ORDERS
+// =============================================
+
+export const listConciergeOrders = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("conciergeOrders"),
+      date: v.string(),
+      customerName: v.string(),
+      amount: v.number(),
+      status: v.string(),
+      feedback: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) return [];
+    return await ctx.db
+      .query("conciergeOrders")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const logConciergeOrder = mutation({
+  args: {
+    date: v.string(),
+    customerName: v.string(),
+    amount: v.number(),
+    status: v.string(),
+    feedback: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.id("conciergeOrders"),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) throw new Error("No user record found");
+    return await ctx.db.insert("conciergeOrders", {
+      userId: user._id,
+      ...args,
+    });
+  },
+});
+
+export const updateConciergeOrder = mutation({
+  args: {
+    id: v.id("conciergeOrders"),
+    status: v.optional(v.string()),
+    feedback: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) throw new Error("No user record found");
+
+    const order = await ctx.db.get(args.id);
+    if (!order) throw new Error("Order not found");
+    if (order.userId !== user._id) throw new Error("Unauthorized");
+
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, updates);
+    return null;
+  },
+});
+
+// =============================================
+// OUTREACH & DISTRIBUTION
+// =============================================
+
+export const listOutreachLogs = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("outreachLogs"),
+      date: v.string(),
+      type: v.string(),
+      target: v.string(),
+      result: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) return [];
+    return await ctx.db
+      .query("outreachLogs")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const logOutreach = mutation({
+  args: {
+    date: v.string(),
+    type: v.string(),
+    target: v.string(),
+    result: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.id("outreachLogs"),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) throw new Error("No user record found");
+    return await ctx.db.insert("outreachLogs", {
+      userId: user._id,
+      ...args,
+    });
+  },
+});
+
+// =============================================
+// MONTHLY REVIEWS
+// =============================================
+
+export const listMonthlyReviews = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("monthlyReviews"),
+      month: v.string(),
+      totalHours: v.number(),
+      totalCommits: v.number(),
+      mrrEnd: v.number(),
+      summary: v.string(),
+      notes: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) return [];
+    return await ctx.db
+      .query("monthlyReviews")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const createMonthlyReview = mutation({
+  args: {
+    month: v.string(),
+    totalHours: v.number(),
+    totalCommits: v.number(),
+    mrrEnd: v.number(),
+    summary: v.string(),
+    notes: v.optional(v.string()),
+  },
+  returns: v.id("monthlyReviews"),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email ?? ""))
+      .first();
+    if (!user) throw new Error("No user record found");
+    return await ctx.db.insert("monthlyReviews", {
+      userId: user._id,
+      ...args,
+    });
+  },
+});
+
+// =============================================
 // WEEKLY REVIEWS
 // =============================================
 
@@ -551,43 +862,57 @@ export const aggregateStats = query({
     const actionsCompleted = actions.filter((a) => a.status === "completed").length;
     const actionsInProgress = actions.filter((a) => a.status === "in_progress").length;
 
-    // streak: walk back from latest log date, count consecutive days
-    const sorted = [...logs].sort((a, b) => (a.date < b.date ? 1 : -1));
+    // streak: walk back from latest log date, count consecutive days, skipping Saturdays (Rest Day)
     let streakDays = 0;
+    const logDates = new Set(logs.map((l) => l.date));
     const now = new Date();
-    for (let i = 0; i < sorted.length; i++) {
-      const expected = new Date(now);
-      expected.setDate(now.getDate() - i);
-      const expectedStr = expected.toISOString().slice(0, 10);
-      if (sorted[i]?.date === expectedStr) {
-        streakDays++;
-      } else if (i === 0) {
-        // allow yesterday as anchor (someone who shipped yesterday but not yet today)
-        const yest = new Date(now);
-        yest.setDate(now.getDate() - 1);
-        const yestStr = yest.toISOString().slice(0, 10);
-        if (sorted[0]?.date === yestStr) {
-          streakDays = 1;
-          for (let j = 1; j < sorted.length; j++) {
-            const expected2 = new Date(now);
-            expected2.setDate(now.getDate() - 1 - j);
-            if (sorted[j]?.date === expected2.toISOString().slice(0, 10)) {
-              streakDays++;
-            } else {
-              break;
-            }
-          }
+    now.setHours(0, 0, 0, 0);
+
+    // Find the start of the streak (anchor)
+    let current = new Date(now);
+    let anchorFound = false;
+
+    while (true) {
+      const dateStr = current.toISOString().slice(0, 10);
+      if (logDates.has(dateStr)) {
+        anchorFound = true;
+        break;
+      }
+      // We can skip Saturday if there is no log
+      if (current.getDay() === 6) {
+        current.setDate(current.getDate() - 1);
+        continue;
+      }
+      // If we haven't found a log for today, we can check yesterday
+      if (current.getTime() === now.getTime()) {
+        current.setDate(current.getDate() - 1);
+        continue;
+      }
+      break;
+    }
+
+    if (anchorFound) {
+      while (true) {
+        const dateStr = current.toISOString().slice(0, 10);
+        const isSaturday = current.getDay() === 6;
+
+        if (logDates.has(dateStr)) {
+          streakDays++;
+        } else if (isSaturday) {
+          // Skip Saturday rest day, don't break the streak
+        } else {
+          // Broken streak
+          break;
         }
-        break;
-      } else {
-        break;
+        current.setDate(current.getDate() - 1);
+        if (streakDays > 365) break; // safety
       }
     }
 
     // last shipped day = latest log with shippedUrl or shippedNote or > 0 commits
-    const lastShip = sorted.find(
-      (l) => l.shippedUrl || l.shippedNote || l.commits > 0,
-    );
+    const lastShip = [...logs]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .find((l) => l.shippedUrl || l.shippedNote || l.commits > 0);
 
     return {
       totalCommits,
