@@ -99,6 +99,58 @@ const schema = defineSchema(
     })
       .index("by_user", ["userId"])
       .index("by_user_week", ["userId", "weekStartDate"]),
+
+    // Dedicated milestone tracking
+    milestones: defineTable({
+      userId: v.id("users"),
+      milestoneId: v.string(), // e.g. output:portfolio-live
+      status: v.union(
+        v.literal("not_started"),
+        v.literal("in_progress"),
+        v.literal("completed"),
+      ),
+      proofUrl: v.optional(v.string()),
+      completedAt: v.optional(v.number()),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_milestone", ["userId", "milestoneId"]),
+
+    // 30-day monthly review
+    monthlyReviews: defineTable({
+      userId: v.id("users"),
+      month: v.string(), // ISO YYYY-MM
+      totalHours: v.number(),
+      totalCommits: v.number(),
+      mrrEnd: v.number(),
+      summary: v.string(),
+      notes: v.optional(v.string()),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_month", ["userId", "month"]),
+
+    // Outreach activities (cold email, SEO, etc.)
+    outreachLogs: defineTable({
+      userId: v.id("users"),
+      date: v.string(),
+      type: v.string(), // cold-email, seo, etc.
+      target: v.string(), // who or what (domain, keyword, contact)
+      result: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_date", ["userId", "date"]),
+
+    // Concierge manual orders and feedback
+    conciergeOrders: defineTable({
+      userId: v.id("users"),
+      date: v.string(),
+      customerName: v.string(),
+      amount: v.number(),
+      status: v.string(), // pending, fulfilled, etc.
+      feedback: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    })
+      .index("by_user", ["userId"]),
   },
   {
     schemaValidation: false,
