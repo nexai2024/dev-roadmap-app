@@ -50,16 +50,8 @@ export function TrialGate({ children, profile }: TrialGateProps) {
         toast.info("Redirecting to secure checkout...");
 
         setTimeout(async () => {
-          try {
-            await unlockProtocol();
-            toast.success("Protocol unlocked!", {
-              description: "You now have full access to the 100-day journey.",
-            });
-          } catch (error) {
-            toast.error("Failed to unlock protocol. Please try again.");
-          } finally {
-            setIsUnlocking(false);
-          }
+          toast.error("Manual unlock is disabled. Please complete the purchase flow.");
+          setIsUnlocking(false);
         }, 2000);
       }
     } catch (error) {
