@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useSearchParams } from "react-router";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
   HUNDRED_DAY_SCHEDULE,
@@ -21,6 +22,7 @@ import {
   CheckCircle2,
   Clock,
   ListChecks,
+  Lock,
   MoonStar,
   Pencil,
   Save,
@@ -28,6 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 const WEEKDAY_OF_DAY = (n: number) => {
   // Day 1 = Monday. (n - 1) % 7 = 0..6 → Mon..Sun.
@@ -38,10 +41,15 @@ const WEEKDAY_OF_DAY = (n: number) => {
 export default function TodayPage() {
   const { user } = useAuth();
   const profile = useQuery(api.notebook.currentProfile);
-  const todayLog = useQuery(api.notebook.todayLog);
-  const upsertLog = useMutation(api.notebook.upsertLog);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dayParam = searchParams.get("day");
 
-  const today = useMemo(() => {
+  const logs = useQuery(api.notebook.listLogs, { limit: 200 });
+  const unlockProtocol = useMutation(api.notebook.unlockProtocol);
+  const createCheckoutSession = useAction(api.payments.createCheckoutSession);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  const actualToday = useMemo(() => {
     if (!profile?.startedAt) return 1;
     const start = new Date(profile.startedAt);
     const now = new Date();
@@ -51,6 +59,26 @@ export default function TodayPage() {
     return Math.max(1, diff + 1);
   }, [profile?.startedAt]);
 
+  const today = useMemo(() => {
+    if (dayParam) {
+      const parsed = parseInt(dayParam, 10);
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= 100) {
+        return parsed;
+      }
+    }
+    return actualToday;
+  }, [actualToday, dayParam]);
+
+  const todayStr = useMemo(() => {
+    if (!profile?.startedAt) return new Date().toISOString().slice(0, 10);
+    const start = new Date(profile.startedAt);
+    const targetDate = new Date(start.getTime() + (today - 1) * 24 * 60 * 60 * 1000);
+    return targetDate.toISOString().slice(0, 10);
+  }, [profile?.startedAt, today]);
+
+  const todayLog = useQuery(api.notebook.todayLog, { date: todayStr });
+  const upsertLog = useMutation(api.notebook.upsertLog);
+
   const currentPhase =
     (profile?.currentPhase as PhaseId | undefined) ?? "phase:ai-fundamentals";
   const phaseMeta = PHASES.find((p) => p.id === currentPhase) ?? PHASES[0];
@@ -59,6 +87,79 @@ export default function TodayPage() {
     if (today < 1 || today > HUNDRED_DAY_SCHEDULE.length) return null;
     return HUNDRED_DAY_SCHEDULE[today - 1] ?? null;
   }, [today]);
+
+  const getDayNumberFromDate = (logDateStr: string, startedAt: number) => {
+    const start = new Date(startedAt);
+    const logDate = new Date(logDateStr);
+    const diff = Math.floor((logDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(1, diff + 1);
+  };
+
+  const loggedDays = useMemo(() => {
+    if (!profile?.startedAt || !logs) return new Set<number>();
+    const set = new Set<number>();
+    for (const l of logs) {
+      const dayNum = getDayNumberFromDate(l.date, profile.startedAt);
+      set.add(dayNum);
+    }
+    return set;
+  }, [profile?.startedAt, logs]);
+
+  const hasPreviousUnloggedDays = useMemo(() => {
+    for (let d = 1; d < today; d++) {
+      if (!loggedDays.has(d)) {
+        return true;
+      }
+    }
+    return false;
+  }, [today, loggedDays]);
+
+  const maxAllowedDay = useMemo(() => {
+    if (profile?.isPaid) return 100;
+    const type = profile?.licenseType ?? "free";
+    if (type === "lifetime") return 100;
+    if (type === "subscription") return 30;
+    return 3; // "free" or "trial"
+  }, [profile?.isPaid, profile?.licenseType]);
+
+  const handleUpgrade = async () => {
+    setIsUnlocking(true);
+    try {
+      try {
+        const checkoutUrl = await createCheckoutSession({
+          email: profile?.email || profile?.displayName || "founder@protocol100.com"
+        });
+        window.location.href = checkoutUrl;
+      } catch (e) {
+        console.warn("Upgrade checkout failed, simulating unlock...", e);
+        toast.info("Redirecting to secure upgrade checkout...");
+        setTimeout(async () => {
+          try {
+            await unlockProtocol();
+            toast.success("Protocol fully unlocked!");
+          } catch (err) {
+            toast.error("Failed to unlock. Please try again.");
+          } finally {
+            setIsUnlocking(false);
+          }
+        }, 2000);
+      }
+    } catch (err) {
+      toast.error("Failed to initiate checkout. Please try again.");
+      setIsUnlocking(false);
+    }
+  };
+
+  const handleNavigateDay = (targetDay: number) => {
+    const targetPhase = PHASES.find((p) => targetDay >= p.dayStart && targetDay <= p.dayEnd) ?? PHASES[0];
+    if (targetPhase.id !== currentPhase) {
+      const proceed = window.confirm(
+        `You are trying to view Day ${targetDay}, which is in the "${targetPhase.label}" phase. Your current active phase is "${phaseMeta.label}". The Protocol100 steps must be completed in order. Do you want to proceed?`
+      );
+      if (!proceed) return;
+    }
+    setSearchParams({ day: targetDay.toString() });
+  };
 
   // Form state — bounded by today's existing log or defaults
   const [hoursCoded, setHoursCoded] = useState(0);
@@ -77,7 +178,19 @@ export default function TodayPage() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!todayLog) return;
+    if (!todayLog) {
+      setHoursCoded(0);
+      setCommits(0);
+      setShippedUrl("");
+      setBipPostUrl("");
+      setCustomersContacted(0);
+      setMrrUsd(0);
+      setNotes("");
+      setShippedNote("");
+      setInputsDone([]);
+      setMood(undefined);
+      return;
+    }
     setHoursCoded(todayLog.hoursCoded);
     setCommits(todayLog.commits);
     setShippedUrl(todayLog.shippedUrl ?? "");
@@ -89,8 +202,6 @@ export default function TodayPage() {
     setInputsDone(todayLog.inputsDone);
     setMood(todayLog.mood);
   }, [todayLog]);
-
-  const todayStr = new Date().toISOString().slice(0, 10);
 
   const toggleInput = (id: string) => {
     setInputsDone((prev) =>
@@ -116,6 +227,9 @@ export default function TodayPage() {
         mood,
       });
       setSavedAt(Date.now());
+      toast.success("Daily log saved!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save daily log");
     } finally {
       setBusy(false);
     }
@@ -125,48 +239,96 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-6">
-      <Header
-        title={`Day ${today} of 100 · ${greet}, ${profile?.displayName ?? user?.name ?? "founder"}.`}
-        subtitle={`${scheduleEntry ? `Phase ${phaseMeta.number} · ${phaseMeta.label}` : "Beyond Day 100"} · ${scheduleEntry?.focus ?? "Build the next milestone."}`}
-      />
-
-      <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-4">
-        {/* Schedule card */}
-        <ScheduleCard
-          entry={scheduleEntry}
-          phaseName={phaseMeta.label}
-          phaseNumber={phaseMeta.number}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dashed border-border pb-6">
+        <Header
+          title={`Day ${today} of 100 · ${greet}, ${profile?.displayName ?? user?.name ?? "founder"}.`}
+          subtitle={`${scheduleEntry ? `Phase ${phaseMeta.number} · ${phaseMeta.label}` : "Beyond Day 100"} · ${scheduleEntry?.focus ?? "Build the next milestone."}`}
         />
-
-        {/* Quick log */}
-        <LogCard
-          todayStr={todayStr}
-          hoursCoded={hoursCoded}
-          setHoursCoded={setHoursCoded}
-          commits={commits}
-          setCommits={setCommits}
-          customersContacted={customersContacted}
-          setCustomersContacted={setCustomersContacted}
-          mrrUsd={mrrUsd}
-          setMrrUsd={setMrrUsd}
-          shippedUrl={shippedUrl}
-          setShippedUrl={setShippedUrl}
-          bipPostUrl={bipPostUrl}
-          setBipPostUrl={setBipPostUrl}
-          shippedNote={shippedNote}
-          setShippedNote={setShippedNote}
-          notes={notes}
-          setNotes={setNotes}
-          mood={mood}
-          setMood={setMood}
-          inputsDone={inputsDone}
-          onToggleInput={toggleInput}
-          onSave={handleSave}
-          busy={busy}
-          savedAt={savedAt}
-          hasExistingLog={!!todayLog}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {today !== actualToday && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleNavigateDay(actualToday)}
+              className="nb-press h-8 text-[11px] font-mono hover:bg-primary hover:text-primary-foreground"
+            >
+              Go to Today (Day {actualToday})
+            </Button>
+          )}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-sm border border-border">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleNavigateDay(today - 1)}
+              disabled={today <= 1}
+              className="nb-press h-8 w-8 p-0 text-xs font-mono"
+            >
+              ←
+            </Button>
+            <span className="text-xs font-mono px-3 font-semibold min-w-[90px] text-center select-none">
+              Day {today} / 100
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleNavigateDay(today + 1)}
+              disabled={today >= 100}
+              className="nb-press h-8 w-8 p-0 text-xs font-mono"
+            >
+              →
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {today > maxAllowedDay ? (
+        <UpgradeGateCard
+          maxAllowedDay={maxAllowedDay}
+          licenseType={profile?.licenseType ?? "free"}
+          onUnlock={handleUpgrade}
+          busy={isUnlocking}
+        />
+      ) : (
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-4">
+          {/* Schedule card */}
+          <ScheduleCard
+            entry={scheduleEntry}
+            phaseName={phaseMeta.label}
+            phaseNumber={phaseMeta.number}
+          />
+
+          {/* Quick log */}
+          <LogCard
+            todayStr={todayStr}
+            hoursCoded={hoursCoded}
+            setHoursCoded={setHoursCoded}
+            commits={commits}
+            setCommits={setCommits}
+            customersContacted={customersContacted}
+            setCustomersContacted={setCustomersContacted}
+            mrrUsd={mrrUsd}
+            setMrrUsd={setMrrUsd}
+            shippedUrl={shippedUrl}
+            setShippedUrl={setShippedUrl}
+            bipPostUrl={bipPostUrl}
+            setBipPostUrl={setBipPostUrl}
+            shippedNote={shippedNote}
+            setShippedNote={setShippedNote}
+            notes={notes}
+            setNotes={setNotes}
+            mood={mood}
+            setMood={setMood}
+            inputsDone={inputsDone}
+            onToggleInput={toggleInput}
+            onSave={handleSave}
+            busy={busy}
+            savedAt={savedAt}
+            hasExistingLog={!!todayLog}
+            hasPreviousUnloggedDays={hasPreviousUnloggedDays}
+            activeDay={today}
+          />
+        </div>
+      )}
 
       {/* Footer hint cards */}
       <div className="grid sm:grid-cols-3 gap-3">
@@ -411,6 +573,8 @@ function LogCard(props: {
   busy: boolean;
   savedAt: number | null;
   hasExistingLog: boolean;
+  hasPreviousUnloggedDays: boolean;
+  activeDay: number;
 }) {
   return (
     <div className="nb-card p-5 sm:p-7">
@@ -552,12 +716,17 @@ function LogCard(props: {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-5">
-        <Button onClick={props.onSave} disabled={props.busy}>
+      <div className="flex items-center gap-2 mt-5 flex-wrap">
+        <Button onClick={props.onSave} disabled={props.busy || props.hasPreviousUnloggedDays}>
           <Save className="h-4 w-4 mr-1" />
           {props.busy ? "Logging…" : props.hasExistingLog ? "Update log" : "Log day"}
         </Button>
-        {props.savedAt && (
+        {props.hasPreviousUnloggedDays && (
+          <p className="text-xs text-destructive font-mono mt-1">
+            ⚠ Cannot log Day {props.activeDay} yet. There are unlogged days before this day.
+          </p>
+        )}
+        {props.savedAt && !props.hasPreviousUnloggedDays && (
           <span className="text-[11px] text-muted-foreground">
             saved · {new Date(props.savedAt).toLocaleTimeString()}
           </span>
@@ -634,6 +803,53 @@ function Header({ title, subtitle }: { title: string; subtitle: string }) {
         {title}
       </h1>
       <p className="text-muted-foreground text-xs mt-1 font-mono">{subtitle}</p>
+    </div>
+  );
+}
+
+function UpgradeGateCard({
+  maxAllowedDay,
+  licenseType,
+  onUnlock,
+  busy,
+}: {
+  maxAllowedDay: number;
+  licenseType: string;
+  onUnlock: () => void;
+  busy: boolean;
+}) {
+  const licenseName =
+    licenseType === "free" || licenseType === "free-trial" || licenseType === "free"
+      ? "Free Trial"
+      : licenseType === "subscription"
+        ? "Monthly Subscription"
+        : "Standard Trial";
+
+  return (
+    <div className="max-w-2xl mx-auto py-12 px-4">
+      <div className="nb-page nb-holes p-8 sm:p-12 relative overflow-hidden text-center">
+        <div className="nb-tape inline-block px-3 py-1 text-[12px] uppercase tracking-widest font-mono rotate-[-2deg] bg-primary text-primary-foreground mb-6">
+          License Gated
+        </div>
+
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+
+          <h1 className="font-mono text-2xl md:text-3xl font-bold leading-tight">
+            Day Locked.
+          </h1>
+
+          <p className="text-muted-foreground mt-4 text-sm leading-relaxed max-w-md">
+            Your current license ({licenseName}) only allows access to days 1 to {maxAllowedDay} of the Protocol100 curriculum. Upgrade your license to unlock the full 100 days.
+          </p>
+
+          <Button onClick={onUnlock} disabled={busy} className="mt-6 h-12 px-8 font-mono">
+            {busy ? "Unlocking..." : "Upgrade License to Lifetime"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

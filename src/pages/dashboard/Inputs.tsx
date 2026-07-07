@@ -9,10 +9,11 @@ import {
   ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function InputsPage() {
   const profile = useQuery(api.notebook.currentProfile);
-  const todayLog = useQuery(api.notebook.todayLog);
+  const todayLog = useQuery(api.notebook.todayLog, {});
   const logs = useQuery(api.notebook.listLogs, { limit: 30 });
   const upsertLog = useMutation(api.notebook.upsertLog);
   const [busy, setBusy] = useState<string | null>(null);
@@ -42,6 +43,9 @@ export default function InputsPage() {
         shippedNote: todayLog?.shippedNote,
         mood: todayLog?.mood,
       });
+      toast.success("Daily inputs updated!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update daily inputs");
     } finally {
       setBusy(null);
     }

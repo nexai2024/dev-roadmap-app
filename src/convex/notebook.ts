@@ -22,6 +22,7 @@ export const currentProfile = query({
       bio: v.optional(v.string()),
       twitterHandle: v.optional(v.string()),
       isPaid: v.optional(v.boolean()),
+      licenseType: v.optional(v.string()),
     }),
     v.null(),
   ),
@@ -30,6 +31,25 @@ export const currentProfile = query({
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     if (!user) return null;
+
+    let licenseType = "free";
+    if (user.isPaid) {
+      licenseType = "lifetime";
+    }
+    const email = user.email;
+    if (email) {
+      const activeLicense = await ctx.db
+        .query("licenses")
+        .withIndex("by_user_email", (q) => q.eq("userEmail", email))
+        .filter((q) => q.eq("status", "active"))
+        .first();
+      if (activeLicense) {
+        if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
+          licenseType = activeLicense.type;
+        }
+      }
+    }
+
     return {
       _id: user._id,
       name: user.name,
@@ -41,6 +61,7 @@ export const currentProfile = query({
       bio: user.bio,
       twitterHandle: user.twitterHandle,
       isPaid: user.isPaid,
+      licenseType,
     };
   },
 });
@@ -146,38 +167,13 @@ export const updateProfile = mutation({
 // =============================================
 
 export const todayLog = query({
-  args: {},
-  returns: v.union(
-    v.object({
-      _id: v.id("dailyLogs"),
-      date: v.string(),
-      phaseId: v.string(),
-      hoursCoded: v.number(),
-      commits: v.number(),
-      shippedUrl: v.optional(v.string()),
-      bipPostUrl: v.optional(v.string()),
-      customersContacted: v.number(),
-      mrrUsd: v.number(),
-      notes: v.optional(v.string()),
-      inputsDone: v.array(v.string()),
-      shippedNote: v.optional(v.string()),
-      mood: v.optional(
-        v.union(
-          v.literal("locked-in"),
-          v.literal("shipping"),
-          v.literal("stuck"),
-          v.literal("shipping-slow"),
-        ),
-      ),
-    }),
-    v.null(),
-  ),
-  handler: async (ctx) => {
+  args: { date: v.optional(v.string()) },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     if (!user) return null;
-    const date = new Date().toISOString().slice(0, 10);
+    const date = args.date ?? new Date().toISOString().slice(0, 10);
     return await ctx.db
       .query("dailyLogs")
       .withIndex("by_user_date", (q) =>
