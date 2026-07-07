@@ -152,6 +152,19 @@ const schema = defineSchema(
       notes: v.optional(v.string()),
     })
       .index("by_user", ["userId"]),
+
+    // Software Licensing and Entitlement Management
+    licenses: defineTable({
+      key: v.string(),
+      type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
+      status: v.union(v.literal("active"), v.literal("revoked"), v.literal("expired")),
+      userEmail: v.string(),
+      hardwareId: v.optional(v.string()),
+      expiresAt: v.optional(v.number()), // Unix timestamp in ms
+      activatedAt: v.optional(v.number()), // Unix timestamp in ms
+    })
+      .index("by_key", ["key"])
+      .index("by_user_email", ["userEmail"]),
   },
   {
     schemaValidation: false,
