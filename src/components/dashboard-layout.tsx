@@ -39,6 +39,7 @@ const NAV = [
   { to: "/dashboard/monthly-review", icon: Layers, label: "Monthly Review" },
   { to: "/dashboard/rules", icon: Shield, label: "Hard Rules" },
   { to: "/dashboard/resources", icon: Library, label: "Resources" },
+  { to: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function DashboardLayout() {
@@ -154,16 +155,21 @@ export default function DashboardLayout() {
                 .slice(0, 2)
                 .toUpperCase()}
             </div>
-            <div className="text-xs leading-tight">
+            <div className="text-xs leading-tight overflow-hidden">
               <div className="font-mono truncate max-w-[160px]">
                 {profile?.displayName ?? user?.name ?? "Founder"}
               </div>
-              <button
-                onClick={handleSignOut}
-                className="text-[11px] text-muted-foreground hover:text-primary underline-offset-2 hover:underline"
-              >
-                Sign out
-              </button>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[10px] uppercase font-bold tracking-tighter text-primary px-1 border border-primary/20 rounded-xs bg-primary/5">
+                  {profile?.licenseType ?? "FREE"}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-[10px] text-muted-foreground hover:text-primary underline-offset-2 hover:underline"
+                >
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
         </div>

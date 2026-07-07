@@ -1,8 +1,9 @@
 // Convex queries and mutations for the Protocol100 notebook
 
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { isAdmin } from "./users";
 
 // =============================================
 // PROFILE
@@ -67,15 +68,30 @@ export const currentProfile = query({
 });
 
 export const unlockProtocol = mutation({
-  args: {},
+  args: { userId: v.optional(v.id("users")) },
   returns: v.null(),
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    const user = await ctx.db.get(userId);
+  handler: async (ctx, args) => {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) throw new Error("Not authenticated");
+
+    // Only admins can unlock the protocol manually via this mutation
+    if (!(await isAdmin(ctx))) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
+    const targetUserId = args.userId ?? currentUserId;
+    const user = await ctx.db.get(targetUserId);
     if (!user) throw new Error("No user record found");
+
     await ctx.db.patch(user._id, { isPaid: true });
     return null;
+  },
+});
+
+export const internalUnlockProtocol = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { isPaid: true });
   },
 });
 
