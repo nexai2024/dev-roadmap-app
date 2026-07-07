@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, QueryCtx } from "./_generated/server";
+import { ROLES } from "./schema";
 
 /**
  * Get the current signed in user. Returns null if the user is not signed in.
@@ -30,4 +31,14 @@ export const getCurrentUser = async (ctx: QueryCtx) => {
     return null;
   }
   return await ctx.db.get(userId);
+};
+
+/**
+ * Check if the current user is an admin.
+ * @param ctx
+ * @returns boolean
+ */
+export const isAdmin = async (ctx: QueryCtx) => {
+  const user = await getCurrentUser(ctx);
+  return user?.role === ROLES.ADMIN;
 };

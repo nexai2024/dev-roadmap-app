@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation, action } from "./_generated/server";
+import { mutation, query, internalMutation, action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { isAdmin } from "./users";
 import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
 import axios from "axios";
 
@@ -38,7 +39,7 @@ export const createInternal = internalMutation({
   },
 });
 
-export const generateAndSend = action({
+export const generateAndSend = internalAction({
   args: {
     userEmail: v.string(),
     type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
@@ -160,6 +161,10 @@ export const revoke = mutation({
     key: v.string(),
   },
   handler: async (ctx, args) => {
+    if (!(await isAdmin(ctx))) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
     const license = await ctx.db
       .query("licenses")
       .withIndex("by_key", (q) => q.eq("key", args.key))
