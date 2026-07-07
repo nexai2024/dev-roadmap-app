@@ -13,12 +13,12 @@ import { motion } from "framer-motion";
 export default function LicensingTest() {
   const [email, setEmail] = useState("");
   const [licenseType, setLicenseType] = useState<"trial" | "subscription" | "lifetime">("trial");
+  const [webhookSecret, setWebhookSecret] = useState("");
   const [generatedKey, setGeneratedKey] = useState("");
   const [hardwareId, setHardwareId] = useState("TEST-HW-1234");
   const [activationKey, setActivationKey] = useState("");
   const [validationKey, setValidationKey] = useState("");
 
-  const generateLicense = useAction(api.licenses.generateAndSend);
   const activateLicense = useMutation(api.licenses.activate);
   const validateLicense = useQuery(api.licenses.validate, validationKey && hardwareId ? { key: validationKey, hardwareId } : "skip");
 
@@ -32,12 +32,22 @@ export default function LicensingTest() {
     }
     setIsGenerating(true);
     try {
-      const result = await generateLicense({ userEmail: email, type: licenseType });
-      if (result.success) {
-        setGeneratedKey(result.key);
-        setActivationKey(result.key);
-        setValidationKey(result.key);
-        toast.success("License generated and key sent to email!");
+      // Since generateAndSend is now an internalAction, we simulate the webhook call
+      const response = await fetch("/webhook/license/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-vly-signature": webhookSecret,
+        },
+        body: JSON.stringify({ userEmail: email, type: licenseType }),
+      });
+
+      if (response.ok) {
+        toast.success("License request sent to webhook!");
+        // In a real test, you'd wait for the email or check the DB.
+        // For the UI simulation, we just notify the user.
+      } else {
+        toast.error("Failed to trigger webhook");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to generate license");
@@ -95,6 +105,16 @@ export default function LicensingTest() {
                   placeholder="user@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="webhook-secret">Webhook Secret (for testing)</Label>
+                <Input
+                  id="webhook-secret"
+                  type="password"
+                  placeholder="Enter secret to sign request"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
                 />
               </div>
               <div className="space-y-2">

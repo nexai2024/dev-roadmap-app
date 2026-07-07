@@ -1,8 +1,7 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation, action } from "./_generated/server";
+import { mutation, query, internalMutation, action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
-import axios from "axios";
 
 // Helper to generate a license key: XXXX-XXXX-XXXX-XXXX
 function generateKey() {
@@ -38,7 +37,7 @@ export const createInternal = internalMutation({
   },
 });
 
-export const generateAndSend = action({
+export const generateAndSend = internalAction({
   args: {
     userEmail: v.string(),
     type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
@@ -63,22 +62,24 @@ export const generateAndSend = action({
 
     // Send email via vly.ai email service
     try {
-      await axios.post(
-        "https://email.vly.ai/send_otp",
-        {
+      const response = await fetch("https://email.vly.ai/send_otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.VLY_API_KEY!,
+        },
+        body: JSON.stringify({
           to: args.userEmail,
           otp: key, // Using the key as the "OTP" in this template for delivery
           appName: process.env.VLY_APP_NAME || "a vly.ai application",
-          subject: "Your License Key", // Assuming the service might support custom subjects or we use the OTP one
-        },
-        {
-          headers: {
-            "x-api-key": "vlytothemoon2025",
-          },
-        },
-      );
-    } catch (error) {
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Email service responded with status ${response.status}`);
+      }
+    } catch (error: any) {
       console.error("Failed to send license email", error);
+      throw new Error(`Failed to deliver license key email: ${error.message}`);
     }
 
     return { success: true, key };
