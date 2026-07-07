@@ -13,6 +13,7 @@ import "./types/global.d.ts";
 // Lazy load route components for better code splitting (extensionless paths)
 const Landing = lazy(() => import("./pages/Landing"));
 const AuthPage = lazy(() => import("./pages/Auth"));
+const LicensingTest = lazy(() => import("./pages/LicensingTest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Dashboard sub-routes
@@ -78,6 +79,7 @@ createRoot(document.getElementById("root")!).render(
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<AuthPage redirectAfterAuth="/dashboard" />} />
+              <Route path="/licensing-test" element={<LicensingTest />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardIndex />} />
                 <Route path="today" element={<TodayPage />} />
