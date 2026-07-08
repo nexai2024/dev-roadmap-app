@@ -24,6 +24,7 @@ export const currentProfile = query({
       twitterHandle: v.optional(v.string()),
       isPaid: v.optional(v.boolean()),
       licenseType: v.optional(v.string()),
+      licenseKey: v.optional(v.string()),
     }),
     v.null(),
   ),
@@ -34,9 +35,12 @@ export const currentProfile = query({
     if (!user) return null;
 
     let licenseType = "free";
+    let licenseKey: string | undefined;
+
     if (user.isPaid) {
       licenseType = "lifetime";
     }
+
     const email = user.email;
     if (email) {
       const activeLicense = await ctx.db
@@ -47,9 +51,12 @@ export const currentProfile = query({
       if (activeLicense) {
         if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
           licenseType = activeLicense.type;
+          licenseKey = activeLicense.key;
         }
       }
     }
+
+    const isPaid = !!(user.isPaid || licenseType === "lifetime" || licenseType === "subscription");
 
     return {
       _id: user._id,
@@ -61,8 +68,9 @@ export const currentProfile = query({
       currentDay: user.currentDay,
       bio: user.bio,
       twitterHandle: user.twitterHandle,
-      isPaid: user.isPaid,
+      isPaid,
       licenseType,
+      licenseKey,
     };
   },
 });
@@ -278,7 +286,23 @@ export const upsertLog = mutation({
     if (!user) throw new Error("No user record found");
 
     // Trial gating: 3 days free.
-    if (!user.isPaid && user.startedAt) {
+    let isPaid = user.isPaid;
+    if (!isPaid && user.email) {
+      const activeLicense = await ctx.db
+        .query("licenses")
+        .withIndex("by_user_email", (q) => q.eq("userEmail", user.email!))
+        .filter((q) => q.eq("status", "active"))
+        .first();
+      if (activeLicense) {
+        if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
+          if (activeLicense.type === "lifetime" || activeLicense.type === "subscription") {
+            isPaid = true;
+          }
+        }
+      }
+    }
+
+    if (!isPaid && user.startedAt) {
       const diff = Math.floor((Date.now() - user.startedAt) / (1000 * 60 * 60 * 24));
       const currentDay = Math.max(1, diff + 1);
       if (currentDay > 3) {

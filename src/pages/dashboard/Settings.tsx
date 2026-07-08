@@ -168,6 +168,26 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {profile.licenseKey && (
+              <div className="p-4 rounded-md border bg-muted/30 flex items-center justify-between">
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Active License Key</div>
+                  <div className="font-mono text-sm font-bold">{profile.licenseKey}</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-[10px] uppercase font-mono"
+                  onClick={() => {
+                    navigator.clipboard.writeText(profile.licenseKey!);
+                    toast.success("License key copied to clipboard");
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="licenseKey" className="font-mono text-xs uppercase tracking-widest">Activate License Key</Label>
