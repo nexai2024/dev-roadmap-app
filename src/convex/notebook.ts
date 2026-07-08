@@ -1,9 +1,11 @@
 // Convex queries and mutations for the Protocol100 notebook
 
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "./users";
 import { isAdmin } from "./users";
+import { api } from "./_generated/api";
+import { vly } from "../lib/vly-integrations";
 
 // =============================================
 // PROFILE
@@ -25,6 +27,10 @@ export const currentProfile = query({
       isPaid: v.optional(v.boolean()),
       licenseType: v.optional(v.string()),
       licenseKey: v.optional(v.string()),
+      accountabilityEnabled: v.optional(v.boolean()),
+      remindersEnabled: v.optional(v.boolean()),
+      suggestedDay: v.optional(v.number()),
+      lastReminderSentAt: v.optional(v.number()),
     }),
     v.null(),
   ),
@@ -58,6 +64,29 @@ export const currentProfile = query({
 
     const isPaid = !!(user.isPaid || licenseType === "lifetime" || licenseType === "subscription");
 
+    // Calculate suggestedDay: the day after the latest logged day.
+    let suggestedDay = 1;
+    if (user.startedAt) {
+      const logs = await ctx.db
+        .query("dailyLogs")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+
+      if (logs.length > 0) {
+        const start = new Date(user.startedAt);
+        let maxDay = 1;
+        for (const log of logs) {
+          const logDate = new Date(log.date);
+          const diff = Math.floor(
+            (logDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          const dayNum = Math.max(1, diff + 1);
+          if (dayNum > maxDay) maxDay = dayNum;
+        }
+        suggestedDay = Math.min(100, maxDay + 1);
+      }
+    }
+
     return {
       _id: user._id,
       name: user.name,
@@ -71,6 +100,10 @@ export const currentProfile = query({
       isPaid,
       licenseType,
       licenseKey,
+      accountabilityEnabled: user.accountabilityEnabled,
+      remindersEnabled: user.remindersEnabled,
+      suggestedDay,
+      lastReminderSentAt: user.lastReminderSentAt,
     };
   },
 });
@@ -167,6 +200,8 @@ export const updateProfile = mutation({
     twitterHandle: v.optional(v.string()),
     currentPhase: v.optional(v.string()),
     currentDay: v.optional(v.number()),
+    accountabilityEnabled: v.optional(v.boolean()),
+    remindersEnabled: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -174,13 +209,23 @@ export const updateProfile = mutation({
     if (!userId) throw new Error("Not authenticated");
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("No user record found");
-    const { displayName, bio, twitterHandle, currentPhase, currentDay } = args;
+    const {
+      displayName,
+      bio,
+      twitterHandle,
+      currentPhase,
+      currentDay,
+      accountabilityEnabled,
+      remindersEnabled,
+    } = args;
     await ctx.db.patch(user._id, {
       displayName: displayName ?? undefined,
       bio: bio ?? undefined,
       twitterHandle: twitterHandle ?? undefined,
       currentPhase: currentPhase ?? undefined,
       currentDay: currentDay ?? undefined,
+      accountabilityEnabled: accountabilityEnabled ?? undefined,
+      remindersEnabled: remindersEnabled ?? undefined,
     });
     return null;
   },
@@ -917,4 +962,91 @@ export const aggregateStats = query({
       actionsInProgress,
     };
   },
+});
+
+// =============================================
+// ACCOUNTABILITY ACTIONS
+// =============================================
+
+export const recordReminderSent = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { lastReminderSentAt: Date.now() });
+  },
+});
+
+export const checkAccountability = action({
+  args: {},
+  handler: async (ctx) => {
+    const user = await ctx.runQuery(api.notebook.currentProfile);
+    if (!user || !user.accountabilityEnabled) return { success: false, reason: "Accountability disabled" };
+
+    const email = user.email;
+    if (!email || !user.remindersEnabled) return { success: false, reason: "No email or reminders disabled" };
+
+    // Cooldown: only send one reminder every 24 hours
+    const lastSent = (user as any).lastReminderSentAt || 0;
+    const cooldownMs = 24 * 60 * 60 * 1000;
+    if (Date.now() - lastSent < cooldownMs) {
+      return { success: false, reason: "In cooldown" };
+    }
+
+    // 1. Check for missed days (behind schedule)
+    const startedAt = user.startedAt;
+    if (!startedAt) return { success: false, reason: "No start date" };
+
+    const now = Date.now();
+    const elapsedDays = Math.floor((now - startedAt) / (1000 * 60 * 60 * 24)) + 1;
+    const suggestedDay = user.suggestedDay || 1;
+
+    let alertMessage = "";
+    if (suggestedDay < elapsedDays) {
+      alertMessage = `You are currently on Day ${suggestedDay}, but based on your start date, you should be on Day ${elapsedDays}. You are falling behind the 100-day protocol pace!`;
+    }
+
+    // 2. Check for overworking (6+ days straight)
+    const logs = await ctx.runQuery(api.notebook.listLogs, { limit: 10 });
+    let consecutiveDays = 0;
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // Simple check: how many of the last 7 days have logs?
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().slice(0, 10);
+    });
+
+    const loggedDates = new Set(logs.map(l => l.date));
+    const workDaysInLastWeek = last7Days.filter(d => loggedDates.has(d)).length;
+
+    if (workDaysInLastWeek >= 6) {
+       alertMessage += (alertMessage ? " Also, " : "") + "You have worked 6 or more days in the last week. The Protocol requires a hard rest on Saturdays! Burnout kills dreams.";
+    }
+
+    if (alertMessage) {
+      // Send email via VLY integration
+      try {
+        await vly.email.send({
+          to: email,
+          subject: "Protocol100 Accountability Alert",
+          html: `
+            <h1>Accountability Check</h1>
+            <p>Founder, we noticed a few things about your progress:</p>
+            <p style="color: #d946ef; font-weight: bold;">${alertMessage}</p>
+            <p>Get back on track or take your mandatory rest day.</p>
+            <p>— Protocol100 Bot</p>
+          `,
+          text: `Accountability Check: ${alertMessage}`
+        });
+
+        await ctx.runMutation(api.notebook.recordReminderSent, { userId: user._id });
+
+        return { success: true, sent: true, message: alertMessage };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    return { success: true, sent: false, message: "All clear" };
+  }
 });
