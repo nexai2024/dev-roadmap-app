@@ -13,6 +13,7 @@ import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as clerkSync from "../clerkSync.js";
 import type * as http from "../http.js";
 import type * as licenses from "../licenses.js";
+import type * as logs from "../logs.js";
 import type * as notebook from "../notebook.js";
 import type * as payments from "../payments.js";
 import type * as users from "../users.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   clerkSync: typeof clerkSync;
   http: typeof http;
   licenses: typeof licenses;
+  logs: typeof logs;
   notebook: typeof notebook;
   payments: typeof payments;
   users: typeof users;
