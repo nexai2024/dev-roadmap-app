@@ -10,7 +10,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import "./types/global.d.ts";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
-
+import { Analytics } from "@vercel/analytics/react"
 
 // Lazy load route components for better code splitting (extensionless paths)
 const Landing = lazy(() => import("./pages/Landing"));
@@ -109,6 +109,7 @@ createRoot(document.getElementById("root")!).render(
           </Suspense>
         </BrowserRouter>
         <Toaster />
+        <Analytics />
       </ConvexProviderWithClerk>
     </InstrumentationProvider>
     </ClerkProvider>

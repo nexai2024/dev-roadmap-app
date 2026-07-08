@@ -40,7 +40,7 @@ export const getAuthUserId = async (ctx: QueryCtx): Promise<Id<"users"> | null> 
     return null;
   }
 
-  const email = identity.email;
+  const email = identity.email || `${identity.subject}@clerk.local`;
   if (email) {
     const user = await ctx.db
       .query("users")
