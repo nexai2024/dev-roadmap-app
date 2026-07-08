@@ -1,7 +1,7 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
-import { InstrumentationProvider } from "@/instrumentation.tsx";
+import { InstrumentationProvider, ErrorBoundary } from "@/instrumentation.tsx";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
 import { StrictMode, useEffect, lazy, Suspense } from "react";
@@ -16,6 +16,7 @@ import { Analytics } from "@vercel/analytics/react"
 const Landing = lazy(() => import("./pages/Landing"));
 const AuthPage = lazy(() => import("./pages/Auth"));
 const LicensingTest = lazy(() => import("./pages/LicensingTest"));
+const ErrorTest = lazy(() => import("./pages/ErrorTest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Dashboard sub-routes
@@ -85,7 +86,12 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/" element={<Landing />} />
               <Route path="/auth/*" element={<AuthPage />} />
               <Route path="/licensing-test" element={<LicensingTest />} />
-              <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route path="/error-test" element={<ErrorTest />} />
+              <Route path="/dashboard" element={
+                <ErrorBoundary>
+                  <DashboardLayout />
+                </ErrorBoundary>
+              }>
                 <Route index element={<DashboardIndex />} />
                 <Route path="today" element={<TodayPage />} />
                 <Route path="phases" element={<PhasesPage />} />
