@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { JSX, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logger } from "@/lib/logger";
 import { useErrorHandler } from "@/hooks/use-error-handler";
 import { ErrorBoundary } from "@/instrumentation";
 
-function BuggyComponent() {
+function BuggyComponent(): JSX.Element {
   throw new Error("I am a render error!");
 }
 
