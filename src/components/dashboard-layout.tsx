@@ -15,6 +15,7 @@ import {
   Loader,
   Settings,
   Shield,
+  CreditCard,
 } from "lucide-react";
 // Bump: force Vite HMR re-bundle for icon + Phase.slug changes.
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const NAV = [
   { to: "/dashboard/rules", icon: Shield, label: "Hard Rules" },
   { to: "/dashboard/resources", icon: Library, label: "Resources" },
   { to: "/dashboard/settings", icon: Settings, label: "Settings" },
+  { to: "/dashboard/billing", icon: CreditCard, label: "Billing" },
 ];
 
 export default function DashboardLayout() {

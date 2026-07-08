@@ -2,8 +2,8 @@ import { useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Lock, Sparkles, ArrowRight } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 
 interface TrialGateProps {
   children: React.ReactNode;
@@ -17,7 +17,7 @@ interface TrialGateProps {
 export function TrialGate({ children, profile }: TrialGateProps) {
   const unlockProtocol = useMutation(api.notebook.unlockProtocol);
   const createCheckoutSession = useAction(api.payments.createCheckoutSession);
-  const [isUnlocking, setIsUnlocking] = useState(false);
+  const navigate = useNavigate();
 
   // If no profile or no startedAt, we don't gate (yet)
   if (!profile || !profile.startedAt) {
@@ -35,29 +35,8 @@ export function TrialGate({ children, profile }: TrialGateProps) {
     return <>{children}</>;
   }
 
-  const handleUnlock = async () => {
-    setIsUnlocking(true);
-    try {
-      // For this demo, we'll try to use the integration but fallback to simulation if it fails
-      // as VLY_INTEGRATION_KEY might not be set in all environments.
-      try {
-        const checkoutUrl = await createCheckoutSession({
-          email: profile.displayName || "founder@protocol100.com"
-        });
-        window.location.href = checkoutUrl;
-      } catch (e) {
-        console.warn("Integration failed, falling back to simulation", e);
-        toast.info("Redirecting to secure checkout...");
-
-        setTimeout(async () => {
-          toast.error("Manual unlock is disabled. Please complete the purchase flow.");
-          setIsUnlocking(false);
-        }, 2000);
-      }
-    } catch (error) {
-      toast.error("Failed to initiate checkout. Please try again.");
-      setIsUnlocking(false);
-    }
+  const handleUnlock = () => {
+    navigate("/dashboard/billing");
   };
 
   return (
@@ -108,10 +87,9 @@ export function TrialGate({ children, profile }: TrialGateProps) {
               size="lg"
               className="w-full h-14 text-lg font-mono"
               onClick={handleUnlock}
-              disabled={isUnlocking}
             >
-              {isUnlocking ? "Processing..." : "Unlock Full Protocol — $20"}
-              {!isUnlocking && <ArrowRight className="ml-2 h-5 w-5" />}
+              Unlock Full Protocol
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
