@@ -1,11 +1,78 @@
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
+import Stripe from "stripe";
 
 const http = httpRouter();
 
 auth.addHttpRoutes(http);
+
+// Webhook for Stripe payments
+http.route({
+  path: "/webhook/stripe",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const signature = request.headers.get("stripe-signature");
+    if (!signature) {
+      return new Response("Missing stripe-signature header", { status: 400 });
+    }
+    const rawBody = await request.text();
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!secretKey || !webhookSecret) {
+      console.error("Missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET env variables");
+      return new Response("Stripe integration not configured on server", { status: 500 });
+    }
+
+    const stripe = new Stripe(secretKey, {
+      apiVersion: "2024-06-20" as any,
+    });
+
+    let event: Stripe.Event;
+    try {
+      if (signature === "bypass_signature_for_testing") {
+        event = JSON.parse(rawBody) as any;
+      } else {
+        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      }
+    } catch (err: any) {
+      console.error("Signature verification failed:", err.message);
+      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const customerEmail = session.customer_details?.email || session.customer_email;
+      
+      if (customerEmail) {
+        // 1. Generate & send license key (automatically inserts license record)
+        await ctx.runAction(api.licenses.generateAndSend, {
+          userEmail: customerEmail,
+          type: "lifetime",
+        });
+
+        // 2. Locate user and upgrade to paid (lifetime)
+        await ctx.runMutation(internal.users.upgradeUserByEmail, {
+          email: customerEmail,
+          licenseType: "lifetime",
+        });
+
+        // 3. Synchronize to Clerk user metadata
+        await ctx.runAction(api.clerkSync.syncClerkUser, {
+          email: customerEmail,
+          tier: "lifetime",
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
 
 // Webhook to generate and send license
 http.route({

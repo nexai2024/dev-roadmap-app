@@ -2,13 +2,15 @@ import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
 import { StrictMode, useEffect, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import "./types/global.d.ts";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+
 
 // Lazy load route components for better code splitting (extensionless paths)
 const Landing = lazy(() => import("./pages/Landing"));
@@ -70,15 +72,16 @@ function RouteSyncer() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}>
     <VlyToolbar />
     <InstrumentationProvider>
-      <ConvexAuthProvider client={convex}>
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <BrowserRouter>
           <RouteSyncer />
           <Suspense fallback={<RouteLoading />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<AuthPage redirectAfterAuth="/dashboard" />} />
+              <Route path="/auth/*" element={<AuthPage />} />
               <Route path="/licensing-test" element={<LicensingTest />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardIndex />} />
@@ -102,7 +105,8 @@ createRoot(document.getElementById("root")!).render(
           </Suspense>
         </BrowserRouter>
         <Toaster />
-      </ConvexAuthProvider>
+      </ConvexProviderWithClerk>
     </InstrumentationProvider>
+    </ClerkProvider>
   </StrictMode>,
 );
