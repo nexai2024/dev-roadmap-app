@@ -1,114 +1,40 @@
+import { toast } from "sonner";
+import React, { useEffect } from "react";
+import { Logger } from "@/lib/logger";
+import { AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Dialog } from "@radix-ui/react-dialog";
-import { ChevronDown, ExternalLink } from "lucide-react";
-import React, { useEffect, useState } from "react";
 
-type SyncError = {
-  error: string;
-  stack: string;
-  filename: string;
-  lineno: number;
-  colno: number;
-};
-
-type AsyncError = {
-  error: string;
-  stack: string;
-};
-
-type GenericError = SyncError | AsyncError;
-
-async function reportErrorToVly(errorData: {
-  error: string;
-  stackTrace?: string;
-  filename?: string;
-  lineno?: number;
-  colno?: number;
-}) {
-  if (!import.meta.env.VITE_VLY_APP_ID) {
-    return;
-  }
-
-  try {
-    await fetch(import.meta.env.VITE_VLY_MONITORING_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        ...errorData,
-        url: window.location.href,
-        projectSemanticIdentifier: import.meta.env.VITE_VLY_APP_ID,
-      }),
-    });
-  } catch (error) {
-    console.error("Failed to report error to Vly:", error);
-  }
-}
-
-function ErrorDialog({
-  error,
-  setError,
-}: {
-  error: GenericError;
-  setError: (error: GenericError | null) => void;
-}) {
+/**
+ * Fallback UI for non-critical render errors.
+ */
+function ErrorFallback() {
   return (
-    <Dialog
-      defaultOpen={true}
-      onOpenChange={() => {
-        setError(null);
-      }}
-    >
-      <DialogContent className="bg-red-700 text-white max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Runtime Error</DialogTitle>
-        </DialogHeader>
-        A runtime error occurred. Open the vly editor to automatically debug the
-        error.
-        <div className="mt-4">
-          <Collapsible>
-            <CollapsibleTrigger>
-              <div className="flex items-center font-bold cursor-pointer">
-                See error details <ChevronDown />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="max-w-[460px]">
-              <div className="mt-2 p-3 bg-neutral-800 rounded text-white text-sm overflow-x-auto max-h-60 max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <pre className="whitespace-pre">{error.stack}</pre>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-        <DialogFooter>
-          <a
-            href={`https://freebuff.com/project/${import.meta.env.VITE_VLY_APP_ID}`}
-            target="_blank"
-          >
-            <Button>
-              <ExternalLink /> Open editor
-            </Button>
-          </a>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <div className="p-6 rounded-lg border border-destructive/20 bg-destructive/5 text-destructive">
+      <div className="flex items-center gap-2 mb-2">
+        <AlertCircle className="h-5 w-5" />
+        <h3 className="font-semibold">Something went wrong</h3>
+      </div>
+      <p className="text-sm mb-4 opacity-90">
+        This part of the page couldn't be loaded. We've been notified and are looking into it.
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => window.location.reload()}
+        className="text-destructive border-destructive/20 hover:bg-destructive/10"
+      >
+        <RefreshCcw className="mr-2 h-4 w-4" />
+        Reload page
+      </Button>
+    </div>
   );
 }
 
 type ErrorBoundaryState = {
   hasError: boolean;
-  error: GenericError | null;
 };
 
-class ErrorBoundary extends React.Component<
+export class ErrorBoundary extends React.Component<
   {
     children: React.ReactNode;
   },
@@ -116,109 +42,69 @@ class ErrorBoundary extends React.Component<
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError() {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // logErrorToMyService(
-    //   error,
-    //   // Example "componentStack":
-    //   //   in ComponentThatThrows (created by App)
-    //   //   in ErrorBoundary (created by App)
-    //   //   in div (created by App)
-    //   //   in App
-    //   info.componentStack,
-    //   // Warning: `captureOwnerStack` is not available in production.
-    //   React.captureOwnerStack(),
-    // );
-    reportErrorToVly({
-      error: error.message,
-      stackTrace: error.stack,
-    });
-    this.setState({
-      hasError: true,
-      error: {
-        error: error.message,
-        stack: info.componentStack ?? error.stack ?? "",
-      },
+    // Log the error centrally
+    Logger.logError(error, info.componentStack ?? undefined);
+
+    // Show a toast for render errors too (generic message)
+    toast.error("An unexpected error occurred", {
+      description: "We've logged the issue and will investigate.",
+      duration: 5000,
     });
   }
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
-      return (
-        <ErrorDialog
-          error={{
-            error: "An error occurred",
-            stack: "",
-          }}
-          setError={() => {}}
-        />
-      );
+      return <ErrorFallback />;
     }
 
     return this.props.children;
   }
 }
 
+/**
+ * Global provider for error instrumentation.
+ * Handles unhandled rejections and global errors.
+ */
 export function InstrumentationProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [error, setError] = useState<GenericError | null>(null);
-
   useEffect(() => {
-    const handleError = async (event: ErrorEvent) => {
-      try {
-        console.log(event);
-        event.preventDefault();
-        setError({
-          error: event.message,
-          stack: event.error?.stack || "",
-          filename: event.filename || "",
-          lineno: event.lineno,
-          colno: event.colno,
-        });
+    // Add a marker to indicate global error handling is active
+    (window as any).__INSTRUMENTATION_ACTIVE__ = true;
 
-        if (import.meta.env.VITE_VLY_APP_ID) {
-          await reportErrorToVly({
-            error: event.message,
-            stackTrace: event.error?.stack,
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-          });
-        }
-      } catch (error) {
-        console.error("Error in handleError:", error);
-      }
+    const handleError = (event: ErrorEvent) => {
+      // Prevent the default browser error handling (e.g., the red overlay in some dev environments)
+      event.preventDefault();
+
+      // Log the error centrally
+      Logger.logError(event.error || event.message, `Filename: ${event.filename}, Line: ${event.lineno}`);
+
+      // Show a generic toast
+      toast.error("An unexpected error occurred", {
+        description: "We've logged the issue and will investigate.",
+        duration: 5000,
+      });
     };
 
-    const handleRejection = async (event: PromiseRejectionEvent) => {
-      try {
-        console.error(event);
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      // Log the rejection centrally
+      Logger.logError(event.reason, "Unhandled Promise Rejection");
 
-        if (import.meta.env.VITE_VLY_APP_ID) {
-          await reportErrorToVly({
-            error: event.reason.message,
-            stackTrace: event.reason.stack,
-          });
-        }
-
-        setError({
-          error: event.reason.message,
-          stack: event.reason.stack,
-        });
-      } catch (error) {
-        console.error("Error in handleRejection:", error);
-      }
+      // Show a generic toast
+      toast.error("An unexpected error occurred", {
+        description: "We've logged the issue and will investigate.",
+        duration: 5000,
+      });
     };
 
     window.addEventListener("error", handleError);
@@ -229,10 +115,10 @@ export function InstrumentationProvider({
       window.removeEventListener("unhandledrejection", handleRejection);
     };
   }, []);
+
   return (
-    <>
-      <ErrorBoundary>{children}</ErrorBoundary>
-      {error && <ErrorDialog error={error} setError={setError} />}
-    </>
+    <ErrorBoundary>
+      {children}
+    </ErrorBoundary>
   );
 }

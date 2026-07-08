@@ -140,4 +140,33 @@ http.route({
   }),
 });
 
+// API for centralized logging
+http.route({
+  path: "/api/logs",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const { message, stack, context, timestamp } = await request.json();
+      if (!message) {
+        return new Response("Missing message", { status: 400 });
+      }
+
+      await ctx.runMutation(internal.logs.create, {
+        message,
+        stack,
+        context,
+        timestamp: timestamp ?? Date.now(),
+      });
+
+      return new Response(null, { status: 200 });
+    } catch (error: any) {
+      console.error("Error processing log request:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }),
+});
+
 export default http;

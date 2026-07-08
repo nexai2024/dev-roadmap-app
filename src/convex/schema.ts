@@ -165,6 +165,14 @@ const schema = defineSchema(
     })
       .index("by_key", ["key"])
       .index("by_user_email", ["userEmail"]),
+
+    // Centralized Logging
+    logs: defineTable({
+      message: v.string(),
+      stack: v.optional(v.string()),
+      context: v.optional(v.string()),
+      timestamp: v.number(),
+    }).index("by_timestamp", ["timestamp"]),
   },
   {
     schemaValidation: false,
