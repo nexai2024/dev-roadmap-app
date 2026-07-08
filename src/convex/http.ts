@@ -48,7 +48,7 @@ http.route({
       
       if (customerEmail) {
         // 1. Generate & send license key (automatically inserts license record)
-        await ctx.runAction(api.licenses.generateAndSend, {
+        await ctx.runAction(internal.licenses.generateAndSend, {
           userEmail: customerEmail,
           type: "lifetime",
         });
