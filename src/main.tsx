@@ -36,6 +36,7 @@ const ResourcesPage = lazy(() => import("./pages/dashboard/Resources"));
 const SetupPage = lazy(() => import("./pages/dashboard/Setup"));
 const PrereqsPage = lazy(() => import("./pages/dashboard/Prereqs"));
 const SettingsPage = lazy(() => import("./pages/dashboard/Settings"));
+const BillingPage = lazy(() => import("./pages/dashboard/Billing"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -101,6 +102,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="prereqs" element={<PrereqsPage />} />
                 <Route path="setup" element={<SetupPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="billing" element={<BillingPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
