@@ -121,6 +121,17 @@ export const activate = mutation({
       });
     }
 
+    // Always ensure user isPaid status is synced for lifetime licenses upon activation
+    if (license.type === "lifetime") {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", license.userEmail))
+        .first();
+      if (user && !user.isPaid) {
+        await ctx.db.patch(user._id, { isPaid: true });
+      }
+    }
+
     return { success: true, type: license.type };
   },
 });
