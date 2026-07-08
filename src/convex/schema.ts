@@ -39,6 +39,11 @@ const schema = defineSchema(
       bio: v.optional(v.string()),
       twitterHandle: v.optional(v.string()),
       isPaid: v.optional(v.boolean()),
+
+      // Accountability fields
+      accountabilityEnabled: v.optional(v.boolean()),
+      remindersEnabled: v.optional(v.boolean()),
+      lastReminderSentAt: v.optional(v.number()),
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
     // Daily log — one row per user per date. The protocol notebook.

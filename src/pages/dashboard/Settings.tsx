@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, User, Key, ShieldCheck, Twitter, Info } from "lucide-react";
+import { Loader2, User, Key, ShieldCheck, Twitter, Info, Bell, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function SettingsPage() {
   const profile = useQuery(api.notebook.currentProfile);
@@ -17,6 +18,8 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [twitterHandle, setTwitterHandle] = useState("");
   const [bio, setBio] = useState("");
+  const [accountabilityEnabled, setAccountabilityEnabled] = useState(false);
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   const [licenseKey, setLicenseKey] = useState("");
@@ -27,6 +30,8 @@ export default function SettingsPage() {
       setDisplayName(profile.displayName || "");
       setTwitterHandle(profile.twitterHandle || "");
       setBio(profile.bio || "");
+      setAccountabilityEnabled(!!profile.accountabilityEnabled);
+      setRemindersEnabled(!!profile.remindersEnabled);
     }
   }, [profile]);
 
@@ -38,6 +43,8 @@ export default function SettingsPage() {
         displayName: displayName.trim() || undefined,
         twitterHandle: twitterHandle.trim() || undefined,
         bio: bio.trim() || undefined,
+        accountabilityEnabled,
+        remindersEnabled,
       });
       toast.success("Profile updated successfully");
     } catch (error: any) {
@@ -136,6 +143,55 @@ export default function SettingsPage() {
                 Save Profile
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Accountability Section */}
+        <Card className="nb-card border-2 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-mono uppercase tracking-wider text-sm">
+              <Bell className="h-4 w-4" />
+              Accountability Checks
+            </CardTitle>
+            <CardDescription>
+              Reminders to stay on pace and respect rest days.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-mono uppercase tracking-widest">Enable Checks</Label>
+                <p className="text-xs text-muted-foreground">Automatically check for missed days or overworking.</p>
+              </div>
+              <Switch
+                checked={accountabilityEnabled}
+                onCheckedChange={setAccountabilityEnabled}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-mono uppercase tracking-widest">Email Reminders</Label>
+                <p className="text-xs text-muted-foreground">Send an alert to {profile.email} if you fall behind.</p>
+              </div>
+              <Switch
+                checked={remindersEnabled}
+                onCheckedChange={setRemindersEnabled}
+                disabled={!accountabilityEnabled}
+              />
+            </div>
+
+            <div className="p-4 rounded-md border bg-primary/5 flex items-start gap-3">
+              <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="text-xs leading-relaxed">
+                <p className="font-bold uppercase tracking-wider mb-1">How it works:</p>
+                <ul className="list-disc ml-4 space-y-1">
+                  <li>If your suggested day is behind your elapsed days from start, we'll nudge you.</li>
+                  <li>Working 6+ days in a row triggers a "Burnout Warning".</li>
+                  <li>Checks run when you visit the dashboard.</li>
+                </ul>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

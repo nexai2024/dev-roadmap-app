@@ -24,7 +24,10 @@ import {
   ListChecks,
   Lock,
   MoonStar,
+  Pause,
   Pencil,
+  Play,
+  RotateCcw,
   Save,
   Sparkles,
 } from "lucide-react";
@@ -66,8 +69,8 @@ export default function TodayPage() {
         return parsed;
       }
     }
-    return actualToday;
-  }, [actualToday, dayParam]);
+    return profile?.suggestedDay ?? actualToday;
+  }, [actualToday, dayParam, profile?.suggestedDay]);
 
   const todayStr = useMemo(() => {
     if (!profile?.startedAt) return new Date().toISOString().slice(0, 10);
@@ -231,6 +234,14 @@ export default function TodayPage() {
 
   const greet = greeting();
 
+  const checkAccountability = useAction(api.notebook.checkAccountability);
+
+  useEffect(() => {
+    if (profile?.accountabilityEnabled) {
+      checkAccountability().catch(console.error);
+    }
+  }, [profile?.accountabilityEnabled, checkAccountability]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dashed border-border pb-6">
@@ -284,12 +295,17 @@ export default function TodayPage() {
         />
       ) : (
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-4">
-          {/* Schedule card */}
-          <ScheduleCard
-            entry={scheduleEntry}
-            phaseName={phaseMeta.label}
-            phaseNumber={phaseMeta.number}
-          />
+          <div className="space-y-4">
+            {/* Schedule card */}
+            <ScheduleCard
+              entry={scheduleEntry}
+              phaseName={phaseMeta.label}
+              phaseNumber={phaseMeta.number}
+            />
+
+            {/* Timer section */}
+            <TimerCard />
+          </div>
 
           {/* Quick log */}
           <LogCard
@@ -841,6 +857,114 @@ function UpgradeGateCard({
 
           <Button onClick={onUnlock} disabled={busy} className="mt-6 h-12 px-8 font-mono">
             {busy ? "Unlocking..." : "Upgrade License to Lifetime"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TimerCard() {
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [preset, setPreset] = useState<number | null>(null);
+
+  useEffect(() => {
+    let interval: any = null;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((time) => time - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setIsActive(false);
+      clearInterval(interval);
+      if (preset !== null) {
+        // notification?
+      }
+    }
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft, preset]);
+
+  const startTimer = (minutes: number) => {
+    setTimeLeft(minutes * 60);
+    setIsActive(true);
+    setPreset(minutes);
+  };
+
+  const toggleTimer = () => setIsActive(!isActive);
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeft(0);
+    setPreset(null);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <div className="nb-card p-5 border-2 border-primary/20">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-primary" />
+          <h3 className="font-mono text-sm uppercase tracking-widest">Protocol Timer</h3>
+        </div>
+        {isActive && (
+          <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-col items-center">
+        <div className="text-4xl font-mono font-bold tracking-tighter tabular-nums">
+          {formatTime(timeLeft)}
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="nb-press h-8 text-[10px] font-mono"
+            onClick={() => startTimer(120)}
+          >
+            2H Block
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="nb-press h-8 text-[10px] font-mono"
+            onClick={() => startTimer(180)}
+          >
+            3H Block
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="nb-press h-8 text-[10px] font-mono"
+            onClick={() => startTimer(25)}
+          >
+            Pomodoro
+          </Button>
+        </div>
+
+        <div className="flex gap-4 mt-6">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggleTimer}
+            disabled={timeLeft === 0}
+            className="h-10 w-10 rounded-full border border-border"
+          >
+            {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={resetTimer}
+            className="h-10 w-10 rounded-full border border-border"
+          >
+            <RotateCcw className="h-4 w-4" />
           </Button>
         </div>
       </div>
