@@ -134,14 +134,8 @@ export default function TodayPage() {
         console.warn("Upgrade checkout failed, simulating unlock...", e);
         toast.info("Redirecting to secure upgrade checkout...");
         setTimeout(async () => {
-          try {
-            await unlockProtocol();
-            toast.success("Protocol fully unlocked!");
-          } catch (err) {
-            toast.error("Failed to unlock. Please try again.");
-          } finally {
-            setIsUnlocking(false);
-          }
+          toast.error("Manual upgrade is disabled. Please complete the purchase flow.");
+          setIsUnlocking(false);
         }, 2000);
       }
     } catch (err) {

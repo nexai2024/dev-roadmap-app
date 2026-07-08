@@ -25,6 +25,11 @@ export default function LicensingTest() {
   const allLicenses = useQuery(api.licenses.listAll, isAdmin ? {} : "skip");
   const createLicense = useMutation(api.licenses.adminCreateLicense);
   const revokeLicense = useMutation(api.licenses.adminRevokeLicense);
+  // Note: generateAndSend is now internal and should be triggered via webhook in prod.
+  // For this test page, we'll keep it but it will fail if called from client.
+  const generateLicense = useAction((api.licenses as any).generateAndSend);
+  const activateLicense = useMutation(api.licenses.activate);
+  const validateLicense = useQuery(api.licenses.validate, validationKey && hardwareId ? { key: validationKey, hardwareId } : "skip");
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);

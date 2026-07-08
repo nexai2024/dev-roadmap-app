@@ -79,11 +79,22 @@ http.route({
   path: "/webhook/license/create",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    // Basic shared secret authentication
+    const authHeader = request.headers.get("Authorization");
+    const secret = process.env.VLY_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error("VLY_WEBHOOK_SECRET is not set");
+      return new Response("Configuration Error", { status: 500 });
+    }
+    if (authHeader !== `Bearer ${secret}`) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
     const { userEmail, type } = await request.json();
     if (!userEmail || !type) {
       return new Response("Missing userEmail or type", { status: 400 });
     }
-    await ctx.runAction(api.licenses.generateAndSend, { userEmail, type });
+    await ctx.runAction(internal.licenses.generateAndSend, { userEmail, type });
     return new Response(null, { status: 200 });
   }),
 });

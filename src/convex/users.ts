@@ -1,6 +1,8 @@
 import { mutation, query, QueryCtx, internalMutation } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { ROLES } from "./schema";
 
 /**
  * Get the current signed in user. Returns null if the user is not signed in.
@@ -114,3 +116,12 @@ export const upgradeUserByEmail = internalMutation({
     return null;
   },
 });
+/**
+ * Check if the current user is an admin.
+ * @param ctx
+ * @returns boolean
+ */
+export const isAdmin = async (ctx: QueryCtx) => {
+  const user = await getCurrentUser(ctx);
+  return user?.role === ROLES.ADMIN;
+};
