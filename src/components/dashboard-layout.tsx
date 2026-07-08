@@ -24,6 +24,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { PHASES, type PhaseId } from "@/data/protocol";
 import { TrialGate } from "./TrialGate";
+import { UserButton } from "@clerk/clerk-react";
 
 const NAV = [
   { to: "/dashboard", icon: Home, label: "Today", end: true },
@@ -150,10 +151,8 @@ export default function DashboardLayout() {
 
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-2">
-            <div className="size-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono">
-              {(profile?.displayName ?? user?.name ?? "IDB")
-                .slice(0, 2)
-                .toUpperCase()}
+            <div className="size-7 flex items-center justify-center">
+              <UserButton />
             </div>
             <div className="text-xs leading-tight overflow-hidden">
               <div className="font-mono truncate max-w-[160px]">
