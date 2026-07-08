@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Digital products and resources from davidpreneur — Protocol100 and the 100-day path to MRR.">
+  <title data-gumroad-field="name">davidpreneur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Caveat:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════
+       DESIGN SYSTEM — Engineer's Grid Notebook
+       ═══════════════════════════════════════════════ */
+    :root {
+      /* Light — Cream graph paper */
+      --bg: #f3eddc;
+      --bg-card: #fbf6e9;
+      --fg: #1c1c1f;
+      --fg-muted: #6b6353;
+      --border: #c9bfa0;
+      --accent-blue: #1d4ed8;
+      --accent-red: #b91c1c;
+      --accent-green: #047857;
+      --accent-purple: #6d28d9;
+      --accent-amber: #b45309;
+      --grid-color: rgba(201, 191, 160, 0.35);
+      --tape-bg: rgba(255, 237, 160, 0.7);
+      --shadow: 0 1px 3px rgba(28,28,31,0.08);
+      --shadow-lg: 0 8px 30px rgba(28,28,31,0.12);
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-hand: 'Caveat', cursive;
+      --radius: 4px;
+    }
+
+    .dark {
+      --bg: #18181b;
+      --bg-card: #1f1f23;
+      --fg: #f3eddc;
+      --fg-muted: #a1a1aa;
+      --border: #3f3f46;
+      --accent-blue: #60a5fa;
+      --accent-red: #f87171;
+      --accent-green: #34d399;
+      --accent-purple: #a78bfa;
+      --accent-amber: #fbbf24;
+      --grid-color: rgba(63, 63, 70, 0.4);
+      --tape-bg: rgba(63, 63, 70, 0.5);
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    /* ═══════════════════════════════════════════════
+       BASE + GRID BACKGROUND
+       ═══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-mono);
+      background-color: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 24px 24px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Red margin line — engineer's notebook */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 72px;
+      width: 2px;
+      height: 100%;
+      background: var(--accent-red);
+      opacity: 0.15;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      body::before { left: 24px; opacity: 0.08; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       LAYOUT
+       ═══════════════════════════════════════════════ */
+    .page-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ═══════════════════════════════════════════════
+       DARK MODE TOGGLE
+       ═══════════════════════════════════════════════ */
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 100;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg-card);
+      color: var(--fg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .theme-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: var(--shadow-lg);
+    }
+    .theme-toggle:focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 2px;
+    }
+    .theme-toggle .icon-sun,
+    .theme-toggle .icon-moon { display: none; }
+    .dark .theme-toggle .icon-sun { display: inline; }
+    :not(.dark) .theme-toggle .icon-moon { display: inline; }
+
+    /* ═══════════════════════════════════════════════
+       HERO SECTION
+       ═══════════════════════════════════════════════ */
+    .hero {
+      padding: 80px 0 48px;
+      text-align: center;
+    }
+
+    .hero-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-family: var(--font-hand);
+      font-size: 40px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: var(--shadow-lg);
+      animation: avatar-float 4s ease-in-out infinite;
+    }
+
+    @keyframes avatar-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .hero-name {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .hero-handle {
+      font-size: 13px;
+      color: var(--fg-muted);
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .hero-bio {
+      max-width: 560px;
+      margin: 0 auto;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      color: var(--fg-muted);
+      line-height: 1.7;
+    }
+
+    /* Tape label effect */
+    .tape-label {
+      display: inline-block;
+      background: var(--tape-bg);
+      padding: 3px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      border: 1px dashed var(--border);
+      transform: rotate(-1deg);
+      margin-bottom: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SECTION HEADERS
+       ═══════════════════════════════════════════════ */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-top: 48px;
+    }
+
+    .section-header h2 {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .section-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .section-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--fg-muted);
+      margin-bottom: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PRODUCT GRID
+       ═══════════════════════════════════════════════ */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--fg);
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--accent-blue);
+    }
+
+    .product-card:focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 2px;
+    }
+
+    .product-thumb {
+      width: 100%;
+      aspect-ratio: 16/10;
+      object-fit: cover;
+      border-bottom: 1.5px solid var(--border);
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+    }
+
+    .product-thumb-placeholder {
+      width: 100%;
+      aspect-ratio: 16/10;
+      border-bottom: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-hand);
+      font-size: 32px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-body {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .product-type-badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 2px;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .badge-digital { background: rgba(29,78,216,0.1); color: var(--accent-blue); }
+    .badge-course { background: rgba(109,40,217,0.1); color: var(--accent-purple); }
+    .badge-ebook { background: rgba(4,120,87,0.1); color: var(--accent-green); }
+    .badge-membership { background: rgba(180,83,9,0.1); color: var(--accent-amber); }
+    .badge-default { background: rgba(107,99,83,0.1); color: var(--fg-muted); }
+
+    .product-name {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .product-desc {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--fg-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-price {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      color: var(--accent-blue);
+    }
+
+    .product-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      margin-top: 4px;
+    }
+
+    .product-cta svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.2s ease;
+    }
+
+    .product-card:hover .product-cta svg {
+      transform: translateX(3px);
+    }
+
+    /* ═══════════════════════════════════════════════
+       POSTS LIST
+       ═══════════════════════════════════════════════ */
+    .posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .post-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--fg);
+      transition: background 0.15s ease;
+    }
+
+    .post-item:first-child {
+      border-top: 1px solid var(--border);
+    }
+
+    .post-item:hover {
+      background: var(--bg-card);
+    }
+
+    .post-item:focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: -2px;
+    }
+
+    .post-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .post-date {
+      font-size: 12px;
+      color: var(--fg-muted);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PHASES TIMELINE
+       ═══════════════════════════════════════════════ */
+    .phases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .phase-chip {
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      font-size: 12px;
+      transition: border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .phase-chip:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-1px);
+    }
+
+    .phase-number {
+      font-family: var(--font-hand);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      line-height: 1;
+    }
+
+    .phase-label {
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .phase-days {
+      color: var(--fg-muted);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       STATS BAR
+       ═══════════════════════════════════════════════ */
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      padding: 28px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    .stat-item {
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .stat-value {
+      font-family: var(--font-hand);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--fg-muted);
+      margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       EMPTY STATE
+       ═══════════════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--fg-muted);
+      font-family: var(--font-sans);
+      font-size: 14px;
+    }
+
+    .empty-state span {
+      font-family: var(--font-hand);
+      font-size: 32px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════ */
+    .site-footer {
+      padding: 32px 0;
+      text-align: center;
+      font-size: 12px;
+      color: var(--fg-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 64px;
+    }
+
+    .site-footer a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-tagline {
+      font-family: var(--font-hand);
+      font-size: 18px;
+      color: var(--fg);
+      margin-bottom: 8px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SCROLL ANIMATIONS
+       ═══════════════════════════════════════════════ */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ═══════════════════════════════════════════════
+       ACCESSIBILITY
+       ═══════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html:not(.light-forced) body { /* Auto dark if no explicit toggle */ }
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--accent-blue);
+      color: #fff;
+      padding: 8px 16px;
+      z-index: 200;
+      font-size: 13px;
+      text-decoration: none;
+      border-radius: 0 0 var(--radius) 0;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .hero { padding: 56px 0 32px; }
+      .hero-name { font-size: 22px; }
+      .hero-bio { font-size: 14px; }
+      .products-grid { grid-template-columns: 1fr; }
+      .phases-grid { grid-template-columns: 1fr 1fr; }
+      .stats-bar { gap: 16px; }
+      .stat-value { font-size: 28px; }
+      .section-header h2 { font-size: 17px; }
+    }
+
+    /* gradient backgrounds for product placeholder thumbs */
+    .grad-1 { background: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%); }
+    .grad-2 { background: linear-gradient(135deg, #047857 0%, #1d4ed8 100%); }
+    .grad-3 { background: linear-gradient(135deg, #b45309 0%, #b91c1c 100%); }
+    .grad-4 { background: linear-gradient(135deg, #6d28d9 0%, #b91c1c 100%); }
+    .grad-5 { background: linear-gradient(135deg, #1d4ed8 0%, #047857 100%); }
+    .grad-6 { background: linear-gradient(135deg, #b91c1c 0%, #b45309 100%); }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Dark mode toggle -->
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+    <span class="icon-moon" aria-hidden="true">🌙</span>
+    <span class="icon-sun" aria-hidden="true">☀️</span>
+  </button>
+
+  <div class="page-container" id="main-content" role="main">
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero fade-in" aria-label="Profile introduction">
+      <div class="hero-avatar" aria-hidden="true">D</div>
+      <div class="tape-label">builder · shipper · indie dev</div>
+      <h1 class="hero-name" data-gumroad-field="name">davidpreneur</h1>
+      <p class="hero-handle">@davidpreneur4</p>
+      <p class="hero-bio" data-gumroad-field="bio">
+        Building in public. Shipping weekly. Revenue is the only KPI.
+      </p>
+    </section>
+
+    <!-- ═══ STATS ═══ -->
+    <div class="stats-bar fade-in" id="stats-bar" aria-label="Catalog stats">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- ═══ PRODUCTS ═══ -->
+    <section class="fade-in" aria-label="Products">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">catalog</p>
+          <h2>Products</h2>
+        </div>
+      </div>
+      <div class="products-grid" id="products-grid">
+        <!-- filled by JS from gumroad-data -->
+      </div>
+    </section>
+
+    <!-- ═══ POSTS ═══ -->
+    <section class="fade-in" id="posts-section" aria-label="Posts" style="display:none;">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">updates</p>
+          <h2>Posts</h2>
+        </div>
+      </div>
+      <div class="posts-list" id="posts-list">
+        <!-- filled by JS -->
+      </div>
+    </section>
+
+    <!-- ═══ PROTOCOL100 ROADMAP ═══ -->
+    <section class="fade-in" aria-label="Protocol100 roadmap">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">the doctrine</p>
+          <h2>Protocol·100</h2>
+        </div>
+      </div>
+      <p style="font-family: var(--font-sans); font-size: 14px; color: var(--fg-muted); max-width: 600px; margin-bottom: 20px; line-height: 1.7;">
+        100 days from absolute zero to first 3 paying customers, then a path to $1,000 MRR.
+        AI-first. Ship ugly, ship weekly, charge from Day 38. Tutorials are procrastination.
+      </p>
+      <div class="phases-grid" id="phases-grid">
+        <div class="phase-chip">
+          <div class="phase-number">01</div>
+          <div class="phase-label">AI Fundamentals</div>
+          <div class="phase-days">Day 1–10</div>
+        </div>
+        <div class="phase-chip">
+          <div class="phase-number">02</div>
+          <div class="phase-label">Stack Crash</div>
+          <div class="phase-days">Day 11–25</div>
+        </div>
+        <div class="phase-chip">
+          <div class="phase-number">03</div>
+          <div class="phase-label">Validate</div>
+          <div class="phase-days">Day 26–40</div>
+        </div>
+        <div class="phase-chip">
+          <div class="phase-number">04</div>
+          <div class="phase-label">Real MVP</div>
+          <div class="phase-days">Day 41–65</div>
+        </div>
+        <div class="phase-chip">
+          <div class="phase-number">05</div>
+          <div class="phase-label">Beta</div>
+          <div class="phase-days">Day 66–80</div>
+        </div>
+        <div class="phase-chip">
+          <div class="phase-number">06</div>
+          <div class="phase-label">Launch</div>
+          <div class="phase-days">Day 81–90</div>
+        </div>
+        <div class="phase-chip">
+          <div class="phase-number">07</div>
+          <div class="phase-label">MRR Push</div>
+          <div class="phase-days">Day 91–100</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="site-footer fade-in">
+      <p class="footer-tagline">Ship ugly. Ship weekly. Charge from Day 38.</p>
+      <p>
+        © <span data-gumroad-field="name">davidpreneur</span> ·
+        Protocol100 doctrine ·
+        <a href="https://makebook.io">makebook.io</a>
+      </p>
+    </footer>
+
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════
+    // DARK MODE TOGGLE
+    // ═══════════════════════════════════════════════
+    (function() {
+      var html = document.documentElement;
+      var toggle = document.getElementById('theme-toggle');
+
+      // Default to system preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        html.classList.add('dark');
+      }
+
+      // Check stored preference
+      try {
+        var stored = localStorage.getItem('gumroad-theme');
+        if (stored === 'dark') html.classList.add('dark');
+        else if (stored === 'light') html.classList.remove('dark');
+      } catch(e) {}
+
+      toggle.addEventListener('click', function() {
+        html.classList.toggle('dark');
+        try {
+          localStorage.setItem('gumroad-theme', html.classList.contains('dark') ? 'dark' : 'light');
+        } catch(e) {}
+      });
+    })();
+
+    // ═══════════════════════════════════════════════
+    // RENDER FROM GUMROAD DATA
+    // ═══════════════════════════════════════════════
+    (function() {
+      var dataEl = document.getElementById('gumroad-data');
+      if (!dataEl) return;
+
+      var data;
+      try {
+        data = JSON.parse(dataEl.textContent);
+      } catch(e) { return; }
+
+      var products = data.products || [];
+      var posts = data.posts || [];
+
+      var gradients = ['grad-1','grad-2','grad-3','grad-4','grad-5','grad-6'];
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+      }
+
+      function getBadgeClass(type) {
+        if (!type) return 'badge-default';
+        var t = type.toLowerCase();
+        if (t === 'course' || t === 'online_course') return 'badge-course';
+        if (t === 'ebook' || t === 'e-book') return 'badge-ebook';
+        if (t === 'membership') return 'badge-membership';
+        if (t === 'digital') return 'badge-digital';
+        return 'badge-default';
+      }
+
+      function formatType(type) {
+        if (!type) return 'product';
+        return type.replace(/_/g, ' ').toLowerCase();
+      }
+
+      function getInitials(name) {
+        if (!name) return '?';
+        var parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+      }
+
+      // ——— RENDER PRODUCTS ———
+      var grid = document.getElementById('products-grid');
+      if (products.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><span>📦</span>Products coming soon.</div>';
+      } else {
+        var html = '';
+        for (var i = 0; i < products.length; i++) {
+          var p = products[i];
+          var grad = gradients[i % gradients.length];
+          var thumbHtml;
+          if (p.thumbnail_url) {
+            thumbHtml = '<img class="product-thumb" src="' + escapeHtml(p.thumbnail_url) + '" alt="' + escapeHtml(p.name) + '" loading="lazy">';
+          } else {
+            thumbHtml = '<div class="product-thumb-placeholder ' + grad + '">' + escapeHtml(getInitials(p.name)) + '</div>';
+          }
+
+          var priceText = p.price || 'Free';
+          if (typeof priceText === 'number') {
+            priceText = priceText === 0 ? 'Free' : '$' + (priceText / 100).toFixed(2).replace(/\.00$/, '');
+          }
+
+          html += '<a class="product-card" href="' + escapeHtml(p.url) + '">'
+            + thumbHtml
+            + '<div class="product-body">'
+            + '<span class="product-type-badge ' + getBadgeClass(p.native_type) + '">' + escapeHtml(formatType(p.native_type)) + '</span>'
+            + '<div class="product-name">' + escapeHtml(p.name) + '</div>'
+            + (p.description ? '<div class="product-desc">' + escapeHtml(p.description) + '</div>' : '')
+            + '<div class="product-price">' + escapeHtml(String(priceText)) + '</div>'
+            + '<span class="product-cta">View product <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>'
+            + '</div></a>';
+        }
+        grid.innerHTML = html;
+      }
+
+      // ——— RENDER STATS ———
+      var statsBar = document.getElementById('stats-bar');
+      var statHtml = '<div class="stat-item"><div class="stat-value">' + products.length + '</div><div class="stat-label">Products</div></div>';
+      if (posts.length > 0) {
+        statHtml += '<div class="stat-item"><div class="stat-value">' + posts.length + '</div><div class="stat-label">Posts</div></div>';
+      }
+      statHtml += '<div class="stat-item"><div class="stat-value">100</div><div class="stat-label">Day Protocol</div></div>';
+      statHtml += '<div class="stat-item"><div class="stat-value">7</div><div class="stat-label">Phases</div></div>';
+      statsBar.innerHTML = statHtml;
+
+      // ——— RENDER POSTS ———
+      if (posts.length > 0) {
+        var postsSection = document.getElementById('posts-section');
+        postsSection.style.display = 'block';
+        var postsList = document.getElementById('posts-list');
+        var postsHtml = '';
+        for (var j = 0; j < posts.length; j++) {
+          var post = posts[j];
+          var dateStr = '';
+          if (post.published_at) {
+            try {
+              var d = new Date(post.published_at);
+              dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch(e) {
+              dateStr = post.published_at;
+            }
+          }
+          postsHtml += '<a class="post-item" href="' + escapeHtml(post.url) + '">'
+            + '<span class="post-name">' + escapeHtml(post.name) + '</span>'
+            + (dateStr ? '<span class="post-date">' + escapeHtml(dateStr) + '</span>' : '')
+            + '</a>';
+        }
+        postsList.innerHTML = postsHtml;
+      }
+    })();
+
+    // ═══════════════════════════════════════════════
+    // SCROLL REVEAL
+    // ═══════════════════════════════════════════════
+    (function() {
+      var els = document.querySelectorAll('.fade-in');
+      if ('IntersectionObserver' in window) {
+        var obs = new IntersectionObserver(function(entries) {
+          for (var i = 0; i < entries.length; i++) {
+            if (entries[i].isIntersecting) {
+              entries[i].target.classList.add('visible');
+              obs.unobserve(entries[i].target);
+            }
+          }
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        for (var j = 0; j < els.length; j++) {
+          obs.observe(els[j]);
+        }
+      } else {
+        // Fallback: show everything
+        for (var k = 0; k < els.length; k++) {
+          els[k].classList.add('visible');
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
