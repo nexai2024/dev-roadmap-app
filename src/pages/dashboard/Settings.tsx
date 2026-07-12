@@ -68,7 +68,8 @@ export default function SettingsPage() {
       const result = await activateLicense({ key: licenseKey.trim(), hardwareId: hwId });
       if (result.success) {
         toast.success(`License activated: ${result.type}`);
-        setLicenseKey("");
+        // Don't clear the key — it will appear in the "Active License Key" display
+        // once the profile re-fetches, and stays visible in the input until then.
       }
     } catch (error: any) {
       toast.error(error.message || "Activation failed");

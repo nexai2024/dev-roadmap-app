@@ -5,78 +5,132 @@ import { ROLES } from "./schema";
 
 /**
  * Get the current signed in user. Returns null if the user is not signed in.
- * Usage: const signedInUser = await ctx.runQuery(api.authHelpers.currentUser);
- * THIS FUNCTION IS READ-ONLY. DO NOT MODIFY.
  */
 export const currentUser = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getCurrentUser(ctx);
-
-    if (user === null) {
-      return null;
-    }
-
-    return user;
+    return await getCurrentUser(ctx);
   },
 });
 
 /**
- * Use this function internally to get the current user data. Remember to handle the null user case.
- * @param ctx
- * @returns
+ * Use this function internally to get the current user data.
+ * Remember to handle the null user case.
  */
 export const getCurrentUser = async (ctx: QueryCtx) => {
   const userId = await getAuthUserId(ctx);
-  if (userId === null) {
-    return null;
-  }
+  if (userId === null) return null;
   return await ctx.db.get(userId);
 };
 
-export const getAuthUserId = async (ctx: QueryCtx): Promise<Id<"users"> | null> => {
+/**
+ * Resolve the current Clerk identity to a Convex user ID.
+ * Uses tokenIdentifier (stable Clerk user ID, always present in JWTs) as the
+ * primary lookup key. Falls back to email for legacy users.
+ * This is READ-ONLY — it never creates or modifies users.
+ */
+export const getAuthUserId = async (
+  ctx: QueryCtx,
+): Promise<Id<"users"> | null> => {
   const identity = await ctx.auth.getUserIdentity();
-  if (identity === null) {
-    return null;
+  if (!identity) return null;
+
+  // Primary: lookup by tokenIdentifier (always present in Clerk JWTs)
+  const tokenIdentifier = identity.tokenIdentifier;
+  if (tokenIdentifier) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", tokenIdentifier))
+      .first();
+    if (user) return user._id;
   }
 
-  const email = identity.email || `${identity.subject}@clerk.local`;
+  // Fallback: lookup by email for legacy users not yet bound to tokenIdentifier
+  const email = identity.email;
   if (email) {
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", email))
       .first();
-    if (user) {
-      return user._id;
+    if (user) return user._id;
+  }
+
+  return null;
+};
+
+/**
+ * Called by the frontend on every login to ensure the user record exists
+ * and stays in sync with Clerk (email, name, image).
+ * clerkEmail is passed from Clerk's useUser() hook on the frontend since
+ * the Convex JWT template may not include the email claim.
+ */
+export const storeUser = mutation({
+  args: { clerkEmail: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const tokenIdentifier = identity.tokenIdentifier;
+    // Prefer JWT email, fall back to frontend-provided Clerk email
+    const email = identity.email || args.clerkEmail;
+    const name = identity.name || identity.givenName || "Founder";
+    const imageUrl = identity.pictureUrl;
+
+    // 1. Check if user already exists by tokenIdentifier
+    const existingByToken = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", tokenIdentifier))
+      .first();
+
+    if (existingByToken) {
+      // Sync any changed fields from Clerk
+      const updates: Record<string, unknown> = {};
+      if (email && existingByToken.email !== email) updates.email = email;
+      if (name && existingByToken.name !== name) updates.name = name;
+      if (imageUrl && existingByToken.image !== imageUrl)
+        updates.image = imageUrl;
+      if (Object.keys(updates).length > 0) {
+        await ctx.db.patch(existingByToken._id, updates);
+      }
+      return existingByToken._id;
     }
 
-    // Auto-create user if they don't exist yet
-    if ("insert" in ctx.db) {
-      // Check if they already have an active lifetime license
+    // 2. Legacy migration: find by email and bind tokenIdentifier
+    if (email) {
+      const existingByEmail = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", email))
+        .first();
+      if (existingByEmail) {
+        await ctx.db.patch(existingByEmail._id, {
+          tokenIdentifier,
+          name: name || existingByEmail.name,
+          image: imageUrl || existingByEmail.image,
+        });
+        return existingByEmail._id;
+      }
+    }
+
+    // 3. Create new user
+    // Check for pre-existing license
+    let isPaid = false;
+    if (email) {
       const activeLicense = await ctx.db
         .query("licenses")
         .withIndex("by_user_email", (q) => q.eq("userEmail", email))
         .filter((q) => q.eq("status", "active"))
         .first();
-      const isPaid = activeLicense ? activeLicense.type === "lifetime" : false;
-
-      const userId = await (ctx.db as any).insert("users", {
-        name: identity.name || identity.givenName || "Founder",
-        email: email,
-        image: identity.pictureUrl,
-        role: "user",
-        isPaid: isPaid,
-      });
-      return userId;
+      isPaid = activeLicense?.type === "lifetime";
     }
-  }
-  return null;
-};
 
-export const storeUser = mutation({
-  args: {},
-  handler: async (ctx) => {
-    return await getAuthUserId(ctx);
+    return await ctx.db.insert("users", {
+      tokenIdentifier,
+      name,
+      email,
+      image: imageUrl,
+      role: "user",
+      isPaid,
+    });
   },
 });
 
@@ -90,7 +144,7 @@ export const makeAdmin = mutation({
     if (!user) {
       throw new Error("User not found");
     }
-    await ctx.db.patch(user._id, { role: "admin" });
+    await ctx.db.patch(user._id, { role: "admin", isPaid: true });
     return { success: true };
   },
 });
@@ -115,10 +169,9 @@ export const upgradeUserByEmail = internalMutation({
     return null;
   },
 });
+
 /**
  * Check if the current user is an admin.
- * @param ctx
- * @returns boolean
  */
 export const isAdmin = async (ctx: QueryCtx) => {
   const user = await getCurrentUser(ctx);

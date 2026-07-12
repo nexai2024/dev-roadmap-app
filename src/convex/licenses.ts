@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation, action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { isAdmin } from "./users";
+import { isAdmin, getCurrentUser } from "./users";
 import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
 import axios from "axios";
 
@@ -92,6 +92,12 @@ export const activate = mutation({
     hardwareId: v.string(),
   },
   handler: async (ctx, args) => {
+    // Resolve authenticated user from Convex DB (not raw JWT claims)
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
     const license = await ctx.db
       .query("licenses")
       .withIndex("by_key", (q) => q.eq("key", args.key))
@@ -114,22 +120,22 @@ export const activate = mutation({
       throw new Error("License is already bound to another device");
     }
 
+    // Bind to hardware + associate with this user's email
+    const patchData: Record<string, unknown> = {};
     if (!license.hardwareId) {
-      await ctx.db.patch(license._id, {
-        hardwareId: args.hardwareId,
-        activatedAt: Date.now(),
-      });
+      patchData.hardwareId = args.hardwareId;
+      patchData.activatedAt = Date.now();
+    }
+    if (user.email && license.userEmail !== user.email) {
+      patchData.userEmail = user.email;
+    }
+    if (Object.keys(patchData).length > 0) {
+      await ctx.db.patch(license._id, patchData);
     }
 
-    // Always ensure user isPaid status is synced for lifetime licenses upon activation
-    if (license.type === "lifetime") {
-      const user = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", license.userEmail))
-        .first();
-      if (user && !user.isPaid) {
-        await ctx.db.patch(user._id, { isPaid: true });
-      }
+    // Sync isPaid status for lifetime licenses
+    if (license.type === "lifetime" && !user.isPaid) {
+      await ctx.db.patch(user._id, { isPaid: true });
     }
 
     return { success: true, type: license.type };
@@ -193,19 +199,9 @@ export const revoke = mutation({
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthenticated");
-    }
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email!))
-      .first();
-    // Support local test flows: if user name is Test Founder Rules or role is admin, allow
-    if (!user || (user.role !== "admin" && user.email !== "admin@example.com" && user.name !== "Test Founder Rules" && !user.isAnonymous)) {
+    if (!(await isAdmin(ctx))) {
       throw new Error("Unauthorized: Admin access required");
     }
-
     return await ctx.db.query("licenses").collect();
   },
 });
@@ -217,15 +213,7 @@ export const adminCreateLicense = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthenticated");
-    }
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email!))
-      .first();
-    if (!user || (user.role !== "admin" && user.email !== "admin@example.com" && user.name !== "Test Founder Rules" && !user.isAnonymous)) {
+    if (!(await isAdmin(ctx))) {
       throw new Error("Unauthorized: Admin access required");
     }
 
@@ -238,13 +226,15 @@ export const adminCreateLicense = mutation({
       expiresAt: args.expiresAt,
     });
 
-    // Automatically set isPaid status for user if they have signed up and it's a lifetime license
-    const customerUser = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.userEmail))
-      .first();
-    if (customerUser && args.type === "lifetime") {
-      await ctx.db.patch(customerUser._id, { isPaid: true });
+    // Automatically set isPaid for lifetime licenses
+    if (args.type === "lifetime") {
+      const customerUser = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", args.userEmail))
+        .first();
+      if (customerUser) {
+        await ctx.db.patch(customerUser._id, { isPaid: true });
+      }
     }
 
     return { success: true, key, licenseId };
@@ -256,15 +246,7 @@ export const adminRevokeLicense = mutation({
     key: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthenticated");
-    }
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email!))
-      .first();
-    if (!user || (user.role !== "admin" && user.email !== "admin@example.com" && user.name !== "Test Founder Rules" && !user.isAnonymous)) {
+    if (!(await isAdmin(ctx))) {
       throw new Error("Unauthorized: Admin access required");
     }
 
@@ -279,7 +261,7 @@ export const adminRevokeLicense = mutation({
 
     await ctx.db.patch(license._id, { status: "revoked" });
 
-    // Automatically remove isPaid status if we revoked their lifetime license
+    // Remove isPaid status if revoking a lifetime license
     if (license.type === "lifetime") {
       const customerUser = await ctx.db
         .query("users")

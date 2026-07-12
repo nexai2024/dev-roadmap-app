@@ -3,7 +3,7 @@ import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Lock, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 interface TrialGateProps {
   children: React.ReactNode;
@@ -82,7 +82,7 @@ export function TrialGate({ children, profile }: TrialGateProps) {
                 </li>
               </ul>
             </div>
-
+<Link to="https://buy.stripe.com/5kQaEZghogn5bGpfzlc7u00">
             <Button
               size="lg"
               className="w-full h-14 text-lg font-mono"
@@ -91,9 +91,9 @@ export function TrialGate({ children, profile }: TrialGateProps) {
               Unlock Full Protocol
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-
+</Link>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              One-time payment · Lifetime access
+              One-time payment · Lifetime accessAZ                         VC
             </p>
           </div>
         </div>
