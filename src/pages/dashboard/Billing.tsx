@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ShieldCheck, CreditCard, ExternalLink } from "lucide-react";
 import { PricingTable, useClerk } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router";
 
 export default function BillingPage() {
   const profile = useQuery(api.notebook.currentProfile);
@@ -80,6 +81,7 @@ export default function BillingPage() {
 
           {/* Pricing / Upgrade section */}
           {!isLifetime && (
+            <div>
             <Card className="border-2 overflow-hidden shadow-sm">
               <CardHeader className="bg-muted/30 border-b pb-6">
                 <CardTitle className="font-mono uppercase tracking-wider text-sm">Available Upgrade Plans</CardTitle>
@@ -92,6 +94,16 @@ export default function BillingPage() {
                 />
               </CardContent>
             </Card>
+            <Card className="border-2 overflow-hidden shadow-sm">
+              <CardHeader className="bg-muted/30 border-b pb-6">
+                <CardTitle className="font-mono uppercase tracking-wider text-sm">Available Upgrade Plans</CardTitle>
+                <CardDescription>Select a plan below to upgrade. Handled securely by Clerk Billing.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <Link to="https://buy.stripe.com/5kQaEZghogn5bGpfzlc7u00">Lifetime Plan is $99 Onep time payment.</Link>
+              </CardContent>
+            </Card>
+            </div>
           )}
         </div>
       </motion.div>
