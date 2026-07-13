@@ -24,19 +24,20 @@ http.route({
     }
 
     const stripe = new Stripe(secretKey, {
-      apiVersion: "2024-06-20" as any,
+      apiVersion: "2024-06-20" as unknown as "2026-06-24.dahlia",
     });
 
     let event: Stripe.Event;
     try {
       if (signature === "bypass_signature_for_testing") {
-        event = JSON.parse(rawBody) as any;
+        event = JSON.parse(rawBody) as Stripe.Event;
       } else {
         event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
       }
-    } catch (err: any) {
-      console.error("Signature verification failed:", err.message);
-      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error("Signature verification failed:", errMsg);
+      return new Response(`Webhook signature verification failed: ${errMsg}`, { status: 400 });
     }
 
     if (event.type === "checkout.session.completed") {
@@ -111,8 +112,9 @@ http.route({
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: errMsg }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -156,9 +158,10 @@ http.route({
       });
 
       return new Response(null, { status: 200 });
-    } catch (error: any) {
-      console.error("Error processing log request:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Error processing log request:", errMsg);
+      return new Response(JSON.stringify({ error: errMsg }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });

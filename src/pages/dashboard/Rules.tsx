@@ -58,7 +58,7 @@ export default function RulesPage() {
           <h2 className="font-mono text-lg">Daily non-negotiables</h2>
         </div>
         <ul className="mt-3 space-y-2.5">
-          {NON_NEGOTIABLES.map((nn, i) => (
+          {NON_NEGOTIABLES.map((nn) => (
             <li key={nn.time} className="flex gap-3 text-sm">
               <span className="font-mono font-bold text-primary shrink-0 w-[110px] tabular-nums">
                 {nn.time}

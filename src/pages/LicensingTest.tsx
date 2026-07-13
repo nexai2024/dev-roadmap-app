@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Key, Trash2, AlertTriangle, Plus, Search } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -35,8 +35,9 @@ export default function LicensingTest() {
     try {
       await makeAdmin({ email: user.email });
       toast.success("Successfully upgraded your user to Admin role!");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to upgrade role");
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      toast.error(errMsg || "Failed to upgrade role");
     }
   };
 
@@ -52,8 +53,9 @@ export default function LicensingTest() {
         toast.success(`License generated successfully! Key: ${result.key}`);
         setEmail("");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to generate license");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Failed to generate license");
     } finally {
       setIsGenerating(false);
     }
@@ -67,8 +69,9 @@ export default function LicensingTest() {
     try {
       await revokeLicense({ key });
       toast.success("License key revoked successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to revoke license");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Failed to revoke license");
     } finally {
       setActionBusy(null);
     }
@@ -189,7 +192,7 @@ export default function LicensingTest() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type" className="text-xs font-mono">License Tier</Label>
-                  <Select value={licenseType} onValueChange={(val: any) => setLicenseType(val)}>
+                  <Select value={licenseType} onValueChange={(val) => setLicenseType(val as "trial" | "subscription" | "lifetime")}>
                     <SelectTrigger className="font-mono text-sm">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>

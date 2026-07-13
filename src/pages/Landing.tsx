@@ -5,7 +5,6 @@ import {
   BookOpen,
   CalendarRange,
   CheckCircle2,
-  ClipboardList,
   Flag,
   KeyRound,
   ListChecks,

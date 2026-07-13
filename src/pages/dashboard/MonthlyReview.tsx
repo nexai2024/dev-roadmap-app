@@ -1,10 +1,10 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarRange, Save, Trash2, TrendingUp } from "lucide-react";
+import { CalendarRange, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function MonthlyReviewPage() {

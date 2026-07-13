@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarRange, ExternalLink, Save, Trash2, X } from "lucide-react";
+import { CalendarRange, ExternalLink, Save, Trash2 } from "lucide-react";
 
 export default function ReviewPage() {
   const reviews = useQuery(api.notebook.listReviews);
@@ -174,7 +174,7 @@ export default function ReviewPage() {
                     <Tag>
                       deploys · {r.weeksSinceLastDeploy === 0 ? "this week" : `${r.weeksSinceLastDeploy}w ago`}
                     </Tag>
-                    <Tag accent>
+                    <Tag>
                       MRR ${r.mrrWeek}{" "}
                       {delta !== 0 && (
                         <span
@@ -246,10 +246,8 @@ function Field({
 
 function Tag({
   children,
-  accent,
 }: {
   children: React.ReactNode;
-  accent?: boolean;
 }) {
   return (
     <span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 border border-border rounded-sm bg-card text-foreground">
