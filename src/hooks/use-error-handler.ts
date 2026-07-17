@@ -7,7 +7,7 @@ import { toast } from "sonner";
  * Useful for catching errors in event handlers or async effects.
  */
 export function useErrorHandler() {
-  const handleError = useCallback((error: any, context?: string) => {
+  const handleError = useCallback((error: unknown, context?: string) => {
     // Log the error centrally
     Logger.logError(error, context);
 

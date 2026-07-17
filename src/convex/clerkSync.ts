@@ -28,7 +28,10 @@ export const syncClerkUser = action({
         return;
       }
 
-      const clerkUsers = (await searchRes.json()) as any[];
+      interface ClerkUser {
+        id: string;
+      }
+      const clerkUsers = (await searchRes.json()) as ClerkUser[];
       for (const clerkUser of clerkUsers) {
         // 2. Update public metadata
         const updateRes = await fetch(

@@ -7,7 +7,6 @@ import {
   PHASES,
   type PhaseId,
   DAILY_INPUTS,
-  NON_NEGOTIABLES,
   type ScheduleEntry,
 } from "@/data/protocol";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,7 @@ import {
   RotateCcw,
   Save,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -48,7 +48,6 @@ export default function TodayPage() {
   const dayParam = searchParams.get("day");
 
   const logs = useQuery(api.notebook.listLogs, { limit: 200 });
-  const unlockProtocol = useMutation(api.notebook.unlockProtocol);
   const createCheckoutSession = useAction(api.payments.createCheckoutSession);
   const [isUnlocking, setIsUnlocking] = useState(false);
 
@@ -141,7 +140,7 @@ export default function TodayPage() {
           setIsUnlocking(false);
         }, 2000);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to initiate checkout. Please try again.");
       setIsUnlocking(false);
     }
@@ -156,80 +155,6 @@ export default function TodayPage() {
       if (!proceed) return;
     }
     setSearchParams({ day: targetDay.toString() });
-  };
-
-  // Form state — bounded by today's existing log or defaults
-  const [hoursCoded, setHoursCoded] = useState(0);
-  const [commits, setCommits] = useState(0);
-  const [shippedUrl, setShippedUrl] = useState("");
-  const [bipPostUrl, setBipPostUrl] = useState("");
-  const [customersContacted, setCustomersContacted] = useState(0);
-  const [mrrUsd, setMrrUsd] = useState(0);
-  const [notes, setNotes] = useState("");
-  const [shippedNote, setShippedNote] = useState("");
-  const [inputsDone, setInputsDone] = useState<string[]>([]);
-  const [mood, setMood] = useState<
-    "locked-in" | "shipping" | "stuck" | "shipping-slow" | undefined
-  >(undefined);
-  const [busy, setBusy] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!todayLog) {
-      setHoursCoded(0);
-      setCommits(0);
-      setShippedUrl("");
-      setBipPostUrl("");
-      setCustomersContacted(0);
-      setMrrUsd(0);
-      setNotes("");
-      setShippedNote("");
-      setInputsDone([]);
-      setMood(undefined);
-      return;
-    }
-    setHoursCoded(todayLog.hoursCoded);
-    setCommits(todayLog.commits);
-    setShippedUrl(todayLog.shippedUrl ?? "");
-    setBipPostUrl(todayLog.bipPostUrl ?? "");
-    setCustomersContacted(todayLog.customersContacted);
-    setMrrUsd(todayLog.mrrUsd);
-    setNotes(todayLog.notes ?? "");
-    setShippedNote(todayLog.shippedNote ?? "");
-    setInputsDone(todayLog.inputsDone);
-    setMood(todayLog.mood);
-  }, [todayLog]);
-
-  const toggleInput = (id: string) => {
-    setInputsDone((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  const handleSave = async () => {
-    setBusy(true);
-    try {
-      await upsertLog({
-        date: todayStr,
-        phaseId: currentPhase,
-        hoursCoded,
-        commits,
-        shippedUrl: shippedUrl || undefined,
-        bipPostUrl: bipPostUrl || undefined,
-        customersContacted,
-        mrrUsd,
-        notes: notes || undefined,
-        inputsDone,
-        shippedNote: shippedNote || undefined,
-        mood,
-      });
-      setSavedAt(Date.now());
-      toast.success("Daily log saved!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save daily log");
-    } finally {
-      setBusy(false);
-    }
   };
 
   const greet = greeting();
@@ -307,33 +232,13 @@ export default function TodayPage() {
             <TimerCard />
           </div>
 
-          {/* Quick log */}
+          {/* Quick log with key to handle unmount/remount on day change */}
           <LogCard
+            key={todayStr}
             todayStr={todayStr}
-            hoursCoded={hoursCoded}
-            setHoursCoded={setHoursCoded}
-            commits={commits}
-            setCommits={setCommits}
-            customersContacted={customersContacted}
-            setCustomersContacted={setCustomersContacted}
-            mrrUsd={mrrUsd}
-            setMrrUsd={setMrrUsd}
-            shippedUrl={shippedUrl}
-            setShippedUrl={setShippedUrl}
-            bipPostUrl={bipPostUrl}
-            setBipPostUrl={setBipPostUrl}
-            shippedNote={shippedNote}
-            setShippedNote={setShippedNote}
-            notes={notes}
-            setNotes={setNotes}
-            mood={mood}
-            setMood={setMood}
-            inputsDone={inputsDone}
-            onToggleInput={toggleInput}
-            onSave={handleSave}
-            busy={busy}
-            savedAt={savedAt}
-            hasExistingLog={!!todayLog}
+            todayLog={todayLog}
+            currentPhase={currentPhase}
+            upsertLog={upsertLog}
             hasPreviousUnloggedDays={hasPreviousUnloggedDays}
             activeDay={today}
           />
@@ -557,35 +462,144 @@ function BipPost({ text, bipUrl }: { text: string; bipUrl?: string }) {
   );
 }
 
-function LogCard(props: {
-  todayStr: string;
+interface LogType {
   hoursCoded: number;
-  setHoursCoded: (n: number) => void;
   commits: number;
-  setCommits: (n: number) => void;
+  shippedUrl?: string;
+  bipPostUrl?: string;
   customersContacted: number;
-  setCustomersContacted: (n: number) => void;
   mrrUsd: number;
-  setMrrUsd: (n: number) => void;
-  shippedUrl: string;
-  setShippedUrl: (s: string) => void;
-  bipPostUrl: string;
-  setBipPostUrl: (s: string) => void;
-  shippedNote: string;
-  setShippedNote: (s: string) => void;
-  notes: string;
-  setNotes: (s: string) => void;
-  mood: "locked-in" | "shipping" | "stuck" | "shipping-slow" | undefined;
-  setMood: (m: "locked-in" | "shipping" | "stuck" | "shipping-slow" | undefined) => void;
+  notes?: string;
+  shippedNote?: string;
   inputsDone: string[];
-  onToggleInput: (id: string) => void;
-  onSave: () => void;
-  busy: boolean;
-  savedAt: number | null;
-  hasExistingLog: boolean;
+  mood?: "locked-in" | "shipping" | "stuck" | "shipping-slow";
+}
+
+function LogCard({
+  todayStr,
+  todayLog,
+  currentPhase,
+  upsertLog,
+  hasPreviousUnloggedDays,
+  activeDay,
+}: {
+  todayStr: string;
+  todayLog: LogType | null | undefined;
+  currentPhase: string;
+  upsertLog: (args: {
+    date: string;
+    phaseId: string;
+    hoursCoded: number;
+    commits: number;
+    shippedUrl?: string;
+    bipPostUrl?: string;
+    customersContacted: number;
+    mrrUsd: number;
+    notes?: string;
+    inputsDone: string[];
+    shippedNote?: string;
+    mood?: "locked-in" | "shipping" | "stuck" | "shipping-slow";
+  }) => Promise<unknown>;
   hasPreviousUnloggedDays: boolean;
   activeDay: number;
 }) {
+  if (todayLog === undefined) {
+    return (
+      <div className="nb-card p-5 sm:p-7 flex flex-col items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <p className="text-xs text-muted-foreground mt-2">Loading daily log...</p>
+      </div>
+    );
+  }
+
+  return (
+    <LogForm
+      todayStr={todayStr}
+      todayLog={todayLog}
+      currentPhase={currentPhase}
+      upsertLog={upsertLog}
+      hasPreviousUnloggedDays={hasPreviousUnloggedDays}
+      activeDay={activeDay}
+    />
+  );
+}
+
+function LogForm({
+  todayStr,
+  todayLog,
+  currentPhase,
+  upsertLog,
+  hasPreviousUnloggedDays,
+  activeDay,
+}: {
+  todayStr: string;
+  todayLog: LogType | null | undefined;
+  currentPhase: string;
+  upsertLog: (args: {
+    date: string;
+    phaseId: string;
+    hoursCoded: number;
+    commits: number;
+    shippedUrl?: string;
+    bipPostUrl?: string;
+    customersContacted: number;
+    mrrUsd: number;
+    notes?: string;
+    inputsDone: string[];
+    shippedNote?: string;
+    mood?: "locked-in" | "shipping" | "stuck" | "shipping-slow";
+  }) => Promise<unknown>;
+  hasPreviousUnloggedDays: boolean;
+  activeDay: number;
+}) {
+  const [hoursCoded, setHoursCoded] = useState(todayLog?.hoursCoded ?? 0);
+  const [commits, setCommits] = useState(todayLog?.commits ?? 0);
+  const [shippedUrl, setShippedUrl] = useState(todayLog?.shippedUrl ?? "");
+  const [bipPostUrl, setBipPostUrl] = useState(todayLog?.bipPostUrl ?? "");
+  const [customersContacted, setCustomersContacted] = useState(todayLog?.customersContacted ?? 0);
+  const [mrrUsd, setMrrUsd] = useState(todayLog?.mrrUsd ?? 0);
+  const [notes, setNotes] = useState(todayLog?.notes ?? "");
+  const [shippedNote, setShippedNote] = useState(todayLog?.shippedNote ?? "");
+  const [inputsDone, setInputsDone] = useState<string[]>(todayLog?.inputsDone ?? []);
+  const [mood, setMood] = useState<
+    "locked-in" | "shipping" | "stuck" | "shipping-slow" | undefined
+  >(todayLog?.mood);
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  const toggleInput = (id: string) => {
+    setInputsDone((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const handleSave = async () => {
+    setBusy(true);
+    try {
+      await upsertLog({
+        date: todayStr,
+        phaseId: currentPhase,
+        hoursCoded,
+        commits,
+        shippedUrl: shippedUrl || undefined,
+        bipPostUrl: bipPostUrl || undefined,
+        customersContacted,
+        mrrUsd,
+        notes: notes || undefined,
+        inputsDone,
+        shippedNote: shippedNote || undefined,
+        mood,
+      });
+      setSavedAt(Date.now());
+      toast.success("Daily log saved!");
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Failed to save daily log");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="nb-card p-5 sm:p-7">
       <div className="flex items-center gap-2">
@@ -593,7 +607,7 @@ function LogCard(props: {
         <h2 className="font-mono text-xl">Log today</h2>
       </div>
       <p className="text-[11px] text-muted-foreground mt-0.5">
-        {props.todayStr} — upserts your daily row.
+        {todayStr} — upserts your daily row.
       </p>
 
       <div className="mt-4">
@@ -602,12 +616,12 @@ function LogCard(props: {
         </p>
         <div className="mt-2 grid sm:grid-cols-2 gap-1.5">
           {DAILY_INPUTS.map((i) => {
-            const on = props.inputsDone.includes(i.id);
+            const on = inputsDone.includes(i.id);
             return (
               <button
                 key={i.id}
                 type="button"
-                onClick={() => props.onToggleInput(i.id)}
+                onClick={() => toggleInput(i.id)}
                 className={cn(
                   "nb-press text-left px-2.5 py-2 rounded-sm border text-xs flex items-start gap-2",
                   on
@@ -634,25 +648,25 @@ function LogCard(props: {
             type="number"
             min={0}
             step="0.25"
-            value={props.hoursCoded}
-            onChange={(e) => props.setHoursCoded(parseFloat(e.target.value) || 0)}
+            value={hoursCoded}
+            onChange={(e) => setHoursCoded(parseFloat(e.target.value) || 0)}
           />
         </MiniField>
         <MiniField label="Commits" hint="gh / vercel">
           <Input
             type="number"
             min={0}
-            value={props.commits}
-            onChange={(e) => props.setCommits(parseInt(e.target.value) || 0)}
+            value={commits}
+            onChange={(e) => setCommits(parseInt(e.target.value) || 0)}
           />
         </MiniField>
         <MiniField label="Customers" hint="20 DMs/day target">
           <Input
             type="number"
             min={0}
-            value={props.customersContacted}
+            value={customersContacted}
             onChange={(e) =>
-              props.setCustomersContacted(parseInt(e.target.value) || 0)
+              setCustomersContacted(parseInt(e.target.value) || 0)
             }
           />
         </MiniField>
@@ -660,38 +674,38 @@ function LogCard(props: {
           <Input
             type="number"
             min={0}
-            value={props.mrrUsd}
-            onChange={(e) => props.setMrrUsd(parseInt(e.target.value) || 0)}
+            value={mrrUsd}
+            onChange={(e) => setMrrUsd(parseInt(e.target.value) || 0)}
           />
         </MiniField>
       </div>
 
       <MiniField label="Shipped URL" hint="Vercel deploy or commit">
         <Input
-          value={props.shippedUrl}
-          onChange={(e) => props.setShippedUrl(e.target.value)}
+          value={shippedUrl}
+          onChange={(e) => setShippedUrl(e.target.value)}
           placeholder="https://github.com/you/repo or https://*.vercel.app"
         />
       </MiniField>
       <MiniField label="Build-in-public post" hint="X / Makerlog URL">
         <Input
-          value={props.bipPostUrl}
-          onChange={(e) => props.setBipPostUrl(e.target.value)}
+          value={bipPostUrl}
+          onChange={(e) => setBipPostUrl(e.target.value)}
           placeholder="https://x.com/you/status/..."
         />
       </MiniField>
       <MiniField label="What did you ship?" hint="one line">
         <Input
-          value={props.shippedNote}
-          onChange={(e) => props.setShippedNote(e.target.value)}
+          value={shippedNote}
+          onChange={(e) => setShippedNote(e.target.value)}
           placeholder="Day 22 made my SaaS boilerplate."
         />
       </MiniField>
       <MiniField label="Notes">
         <Textarea
           rows={3}
-          value={props.notes}
-          onChange={(e) => props.setNotes(e.target.value)}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           placeholder="What broke. What you'd do tomorrow."
         />
       </MiniField>
@@ -712,10 +726,10 @@ function LogCard(props: {
             <button
               key={id}
               type="button"
-              onClick={() => props.setMood(props.mood === id ? undefined : id)}
+              onClick={() => setMood(mood === id ? undefined : id)}
               className={cn(
                 "nb-press px-2.5 py-1 text-xs rounded-sm border",
-                props.mood === id
+                mood === id
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border hover:bg-sidebar-accent",
               )}
@@ -727,18 +741,18 @@ function LogCard(props: {
       </div>
 
       <div className="flex items-center gap-2 mt-5 flex-wrap">
-        <Button onClick={props.onSave} disabled={props.busy || props.hasPreviousUnloggedDays}>
+        <Button onClick={handleSave} disabled={busy || hasPreviousUnloggedDays}>
           <Save className="h-4 w-4 mr-1" />
-          {props.busy ? "Logging…" : props.hasExistingLog ? "Update log" : "Log day"}
+          {busy ? "Logging…" : todayLog ? "Update log" : "Log day"}
         </Button>
-        {props.hasPreviousUnloggedDays && (
+        {hasPreviousUnloggedDays && (
           <p className="text-xs text-destructive font-mono mt-1">
-            ⚠ Cannot log Day {props.activeDay} yet. There are unlogged days before this day.
+            ⚠ Cannot log Day {activeDay} yet. There are unlogged days before this day.
           </p>
         )}
-        {props.savedAt && !props.hasPreviousUnloggedDays && (
+        {savedAt && !hasPreviousUnloggedDays && (
           <span className="text-[11px] text-muted-foreground">
-            saved · {new Date(props.savedAt).toLocaleTimeString()}
+            saved · {new Date(savedAt).toLocaleTimeString()}
           </span>
         )}
       </div>
@@ -867,35 +881,32 @@ function UpgradeGateCard({
 function TimerCard() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [preset, setPreset] = useState<number | null>(null);
 
   useEffect(() => {
-    let interval: any = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
-      clearInterval(interval);
-      if (preset !== null) {
-        // notification?
-      }
-    }
+    if (!isActive) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setIsActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [isActive, timeLeft, preset]);
+  }, [isActive]);
 
   const startTimer = (minutes: number) => {
     setTimeLeft(minutes * 60);
     setIsActive(true);
-    setPreset(minutes);
   };
 
   const toggleTimer = () => setIsActive(!isActive);
   const resetTimer = () => {
     setIsActive(false);
     setTimeLeft(0);
-    setPreset(null);
   };
 
   const formatTime = (seconds: number) => {

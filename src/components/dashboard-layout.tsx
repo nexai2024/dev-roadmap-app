@@ -1,8 +1,8 @@
+import { useMemo } from "react";
 import { Link, Navigate, NavLink, Outlet, useNavigate } from "react-router";
 import {
   BookOpen,
   CalendarRange,
-  CheckCircle2,
   ClipboardList,
   ConciergeBell,
   Flag,
@@ -50,6 +50,13 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const profile = useQuery(api.notebook.currentProfile);
   const stats = useQuery(api.notebook.aggregateStats);
+
+  const trialDaysValue = useMemo(() => {
+    if (!profile?.startedAt) return "1/3 Days";
+    const elapsed = new Date().getTime() - profile.startedAt;
+    const days = Math.min(3, Math.max(1, Math.floor(elapsed / (1000 * 60 * 60 * 24)) + 1));
+    return `${days}/3 Days`;
+  }, [profile?.startedAt]);
 
   if (isLoading) {
     return (
@@ -198,7 +205,7 @@ export default function DashboardLayout() {
               {profile?.startedAt && !profile?.isPaid && (
                 <KpiPill
                   label="Trial"
-                  value={`${Math.min(3, Math.max(1, Math.floor((Date.now() - profile.startedAt) / (1000 * 60 * 60 * 24)) + 1))}/3 Days`}
+                  value={trialDaysValue}
                   accent="bg-amber-500"
                 />
               )}

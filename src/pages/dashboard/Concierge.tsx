@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ConciergeBell, Save, CheckCircle2, Clock } from "lucide-react";
+import { ConciergeBell, Save, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ConciergePage() {

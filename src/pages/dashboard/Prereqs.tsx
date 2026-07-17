@@ -1,7 +1,6 @@
 import {
   PREREQUISITES,
   PHASES,
-  type PhaseId,
   type PrerequisiteCategory,
 } from "@/data/protocol";
 import {
@@ -10,7 +9,6 @@ import {
   CircleDot,
   CreditCard,
   KeyRound,
-  Mail,
   Rocket,
   Send,
   Users,
@@ -182,7 +180,6 @@ function Stat({
 }
 
 function Category({
-  category: _category,
   meta,
   items,
 }: {
