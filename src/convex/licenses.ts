@@ -74,7 +74,7 @@ export const generateAndSend = internalAction({
         },
         {
           headers: {
-            "x-api-key": "vlytothemoon2025",
+            "x-api-key": process.env.VLY_EMAIL_API_KEY ?? "",
           },
         },
       );

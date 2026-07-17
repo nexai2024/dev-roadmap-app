@@ -67,23 +67,21 @@ export const currentProfile = query({
     // Calculate suggestedDay: the day after the latest logged day.
     let suggestedDay = 1;
     if (user.startedAt) {
-      const logs = await ctx.db
+      // Only fetch the latest log instead of all logs
+      const latestLog = await ctx.db
         .query("dailyLogs")
-        .withIndex("by_user", (q) => q.eq("userId", user._id))
-        .collect();
+        .withIndex("by_user_date", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .first();
 
-      if (logs.length > 0) {
+      if (latestLog) {
         const start = new Date(user.startedAt);
-        let maxDay = 1;
-        for (const log of logs) {
-          const logDate = new Date(log.date);
-          const diff = Math.floor(
-            (logDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-          );
-          const dayNum = Math.max(1, diff + 1);
-          if (dayNum > maxDay) maxDay = dayNum;
-        }
-        suggestedDay = Math.min(100, maxDay + 1);
+        const logDate = new Date(latestLog.date);
+        const diff = Math.floor(
+          (logDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        const dayNum = Math.max(1, diff + 1);
+        suggestedDay = Math.min(100, dayNum + 1);
       }
     }
 

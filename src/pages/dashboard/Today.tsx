@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import { useSearchParams } from "react-router";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -17,6 +18,7 @@ import {
   Activity,
   ArrowUpRight,
   BatteryCharging,
+  Bot,
   CalendarCheck2,
   CheckCircle2,
   Clock,
@@ -26,6 +28,7 @@ import {
   Pause,
   Pencil,
   Play,
+  RefreshCw,
   RotateCcw,
   Save,
   Sparkles,
@@ -50,6 +53,11 @@ export default function TodayPage() {
   const logs = useQuery(api.notebook.listLogs, { limit: 200 });
   const createCheckoutSession = useAction(api.payments.createCheckoutSession);
   const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // AI Coach state
+  const generateDebrief = useAction(api.coach.generateDailyDebrief);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachError, setCoachError] = useState<string | null>(null);
 
   const actualToday = useMemo(() => {
     if (!profile?.startedAt) return 1;
@@ -157,15 +165,107 @@ export default function TodayPage() {
     setSearchParams({ day: targetDay.toString() });
   };
 
+  // Form state — bounded by today's existing log or defaults
+  const [hoursCoded, setHoursCoded] = useState(0);
+  const [commits, setCommits] = useState(0);
+  const [shippedUrl, setShippedUrl] = useState("");
+  const [bipPostUrl, setBipPostUrl] = useState("");
+  const [customersContacted, setCustomersContacted] = useState(0);
+  const [mrrUsd, setMrrUsd] = useState(0);
+  const [notes, setNotes] = useState("");
+  const [shippedNote, setShippedNote] = useState("");
+  const [inputsDone, setInputsDone] = useState<string[]>([]);
+  const [mood, setMood] = useState<
+    "locked-in" | "shipping" | "stuck" | "shipping-slow" | undefined
+  >(undefined);
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!todayLog) {
+      setHoursCoded(0);
+      setCommits(0);
+      setShippedUrl("");
+      setBipPostUrl("");
+      setCustomersContacted(0);
+      setMrrUsd(0);
+      setNotes("");
+      setShippedNote("");
+      setInputsDone([]);
+      setMood(undefined);
+      return;
+    }
+    setHoursCoded(todayLog.hoursCoded);
+    setCommits(todayLog.commits);
+    setShippedUrl(todayLog.shippedUrl ?? "");
+    setBipPostUrl(todayLog.bipPostUrl ?? "");
+    setCustomersContacted(todayLog.customersContacted);
+    setMrrUsd(todayLog.mrrUsd);
+    setNotes(todayLog.notes ?? "");
+    setShippedNote(todayLog.shippedNote ?? "");
+    setInputsDone(todayLog.inputsDone);
+    setMood(todayLog.mood);
+  }, [todayLog]);
+
+  const toggleInput = (id: string) => {
+    setInputsDone((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const triggerCoach = async (date: string) => {
+    if (!profile?.isPaid) return; // Only for paid users
+    setCoachLoading(true);
+    setCoachError(null);
+    try {
+      await generateDebrief({ date });
+    } catch (error: any) {
+      console.error("AI Coach error:", error);
+      setCoachError(error.message || "Coach is temporarily unavailable.");
+    } finally {
+      setCoachLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setBusy(true);
+    try {
+      await upsertLog({
+        date: todayStr,
+        phaseId: currentPhase,
+        hoursCoded,
+        commits,
+        shippedUrl: shippedUrl || undefined,
+        bipPostUrl: bipPostUrl || undefined,
+        customersContacted,
+        mrrUsd,
+        notes: notes || undefined,
+        inputsDone,
+        shippedNote: shippedNote || undefined,
+        mood,
+      });
+      setSavedAt(Date.now());
+      toast.success("Daily log saved!");
+      // Trigger AI Coach after successful save
+      triggerCoach(todayStr);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save daily log");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const greet = greeting();
 
   const checkAccountability = useAction(api.notebook.checkAccountability);
+  const accountabilityCheckedRef = useRef(false);
 
   useEffect(() => {
-    if (profile?.accountabilityEnabled) {
+    if (profile?.accountabilityEnabled && !accountabilityCheckedRef.current) {
+      accountabilityCheckedRef.current = true;
       checkAccountability().catch(console.error);
     }
-  }, [profile?.accountabilityEnabled, checkAccountability]);
+  }, [profile?.accountabilityEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-6">
@@ -243,6 +343,18 @@ export default function TodayPage() {
             activeDay={today}
           />
         </div>
+      )}
+
+      {/* AI Coach Card */}
+      {today <= maxAllowedDay && (
+        <CoachCard
+          date={todayStr}
+          isPaid={!!profile?.isPaid}
+          hasLog={!!todayLog}
+          loading={coachLoading}
+          error={coachError}
+          onRegenerate={() => triggerCoach(todayStr)}
+        />
       )}
 
       {/* Footer hint cards */}
@@ -976,9 +1088,124 @@ function TimerCard() {
             className="h-10 w-10 rounded-full border border-border"
           >
             <RotateCcw className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
   );
 }
+
+function CoachCard({
+  date,
+  isPaid,
+  hasLog,
+  loading,
+  error,
+  onRegenerate,
+}: {
+  date: string;
+  isPaid: boolean;
+  hasLog: boolean;
+  loading: boolean;
+  error: string | null;
+  onRegenerate: () => void;
+}) {
+  const insight = useQuery(api.coach.getDailyInsight, { date });
+
+  if (!isPaid) {
+    return (
+      <div className="nb-card p-6 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden">
+        <div className="absolute -top-3 -right-3 rotate-12 opacity-10">
+          <Bot className="h-32 w-32" />
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="bg-primary/20 text-primary p-1.5 rounded-full">
+            <Bot className="h-5 w-5" />
+          </div>
+          <h3 className="font-mono text-sm uppercase tracking-widest font-bold">AI Coach</h3>
+        </div>
+        <p className="text-muted-foreground text-sm max-w-md relative z-10 font-mono">
+          Save your daily logs and get personalized, no-BS feedback from your AI coach to stay on track.
+        </p>
+        <Button variant="outline" className="mt-4 font-mono text-xs z-10 relative">
+          <Lock className="mr-2 h-3 w-3" /> Unlock with Lifetime License
+        </Button>
+      </div>
+    );
+  }
+
+  if (!hasLog) {
+    return (
+      <div className="nb-card p-5 border-2 border-dashed border-border bg-muted/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">AI Coach</h3>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3 font-mono">
+          Save your daily log to get personalized feedback.
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="nb-card p-6 border-2 border-primary/30 relative overflow-hidden">
+        <div className="flex items-center gap-2 mb-4 animate-pulse">
+          <div className="bg-primary text-primary-foreground p-1.5 rounded-full">
+            <Bot className="h-4 w-4" />
+          </div>
+          <h3 className="font-mono text-sm uppercase tracking-widest font-bold">Coach is thinking...</h3>
+        </div>
+        <div className="space-y-3">
+          <div className="h-4 bg-primary/10 rounded w-3/4 animate-pulse"></div>
+          <div className="h-4 bg-primary/10 rounded w-full animate-pulse"></div>
+          <div className="h-4 bg-primary/10 rounded w-5/6 animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="nb-card p-5 border-2 border-destructive/50 bg-destructive/5">
+        <p className="text-sm text-destructive font-mono">{error}</p>
+        <Button variant="outline" size="sm" onClick={onRegenerate} className="mt-3 font-mono text-xs">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  if (insight) {
+    return (
+      <div className="nb-card p-6 border-2 border-primary/30 bg-primary/5 relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary text-primary-foreground p-1.5 rounded-full">
+              <Bot className="h-4 w-4" />
+            </div>
+            <h3 className="font-mono text-sm uppercase tracking-widest font-bold text-primary">Protocol Coach</h3>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRegenerate}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            title="Regenerate"
+          >
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        <div className="prose prose-sm dark:prose-invert font-sans nb-hand text-lg leading-relaxed max-w-none prose-p:my-2">
+          <ReactMarkdown>{insight.content}</ReactMarkdown>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+

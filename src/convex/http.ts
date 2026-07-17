@@ -29,15 +29,10 @@ http.route({
 
     let event: Stripe.Event;
     try {
-      if (signature === "bypass_signature_for_testing") {
-        event = JSON.parse(rawBody) as Stripe.Event;
-      } else {
-        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-      }
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      console.error("Signature verification failed:", errMsg);
-      return new Response(`Webhook signature verification failed: ${errMsg}`, { status: 400 });
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    } catch (err: any) {
+      console.error("Signature verification failed:", err.message);
+      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
     }
 
     if (event.type === "checkout.session.completed") {

@@ -137,6 +137,10 @@ export const storeUser = mutation({
 export const makeAdmin = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    if (!(await isAdmin(ctx))) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))
