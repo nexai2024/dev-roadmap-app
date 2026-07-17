@@ -1,4 +1,4 @@
-"use node";
+
 
 // AI Daily Coach — Gemini-powered personalized coaching after each daily log.
 // Uses the Gemini REST API directly via fetch (no npm dependency).
@@ -116,7 +116,7 @@ Format rules:
 export const generateDailyDebrief = action({
   args: { date: v.string() },
   returns: v.string(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<string> => {
     // 1. Get current user profile + today's log + recent history
     const profile = await ctx.runQuery(api.notebook.currentProfile);
     if (!profile) throw new Error("Not authenticated");
@@ -140,18 +140,18 @@ export const generateDailyDebrief = action({
 
     // 5. Build the user prompt with real data
     const moodLabel = todayLog.mood
-      ? { "locked-in": "Locked-in 🔥", "shipping": "Shipping 🚀", "stuck": "Stuck 😤", "shipping-slow": "Slow but moving 🐢" }[todayLog.mood] ?? todayLog.mood
+      ? ({ "locked-in": "Locked-in 🔥", "shipping": "Shipping 🚀", "stuck": "Stuck 😤", "shipping-slow": "Slow but moving 🐢" } as Record<string, string>)[todayLog.mood] ?? todayLog.mood
       : "Not set";
 
     const inputsCount = todayLog.inputsDone?.length ?? 0;
 
     // Calculate trends from recent logs
-    const recentHours = recentLogs.map((l) => l.hoursCoded);
+    const recentHours = recentLogs.map((l: any) => l.hoursCoded);
     const avgHours = recentHours.length > 0
-      ? (recentHours.reduce((a, b) => a + b, 0) / recentHours.length).toFixed(1)
+      ? (recentHours.reduce((a: number, b: number) => a + b, 0) / recentHours.length).toFixed(1)
       : "0";
 
-    const recentMRR = recentLogs.map((l) => l.mrrUsd);
+    const recentMRR = recentLogs.map((l: any) => l.mrrUsd);
     const mrrTrend = recentMRR.length >= 2
       ? recentMRR[0] > recentMRR[recentMRR.length - 1] ? "↑ rising" : recentMRR[0] < recentMRR[recentMRR.length - 1] ? "↓ declining" : "→ flat"
       : "insufficient data";

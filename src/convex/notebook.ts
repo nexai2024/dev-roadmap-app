@@ -1012,7 +1012,7 @@ export const checkAccountability = action({
       return d.toISOString().slice(0, 10);
     });
 
-    const loggedDates = new Set(logs.map(l => l.date));
+    const loggedDates = new Set(logs.map((l: any) => l.date));
     const workDaysInLastWeek = last7Days.filter(d => loggedDates.has(d)).length;
 
     if (workDaysInLastWeek >= 6) {

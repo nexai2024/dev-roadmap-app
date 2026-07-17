@@ -1088,6 +1088,7 @@ function TimerCard() {
             className="h-10 w-10 rounded-full border border-border"
           >
             <RotateCcw className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
