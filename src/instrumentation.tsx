@@ -80,7 +80,7 @@ export function InstrumentationProvider({
 }) {
   useEffect(() => {
     // Add a marker to indicate global error handling is active
-    (window as any).__INSTRUMENTATION_ACTIVE__ = true;
+    (window as unknown as Record<string, unknown>).__INSTRUMENTATION_ACTIVE__ = true;
 
     const handleError = (event: ErrorEvent) => {
       // Prevent the default browser error handling (e.g., the red overlay in some dev environments)

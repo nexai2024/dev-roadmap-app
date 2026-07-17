@@ -1,8 +1,5 @@
-import { useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Lock, Sparkles, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
 import { Link, useNavigate } from "react-router";
 
 interface TrialGateProps {
@@ -15,8 +12,6 @@ interface TrialGateProps {
 }
 
 export function TrialGate({ children, profile }: TrialGateProps) {
-  const unlockProtocol = useMutation(api.notebook.unlockProtocol);
-  const createCheckoutSession = useAction(api.payments.createCheckoutSession);
   const navigate = useNavigate();
 
   // If no profile or no startedAt, we don't gate (yet)

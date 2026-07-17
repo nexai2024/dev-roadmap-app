@@ -44,8 +44,9 @@ export default function InputsPage() {
         mood: todayLog?.mood,
       });
       toast.success("Daily inputs updated!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update daily inputs");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Failed to update daily inputs");
     } finally {
       setBusy(null);
     }
