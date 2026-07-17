@@ -24,7 +24,7 @@ http.route({
     }
 
     const stripe = new Stripe(secretKey, {
-      apiVersion: "2024-06-20" as any,
+      apiVersion: "2024-06-20" as unknown as "2026-06-24.dahlia",
     });
 
     let event: Stripe.Event;
@@ -107,8 +107,9 @@ http.route({
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: errMsg }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -152,9 +153,10 @@ http.route({
       });
 
       return new Response(null, { status: 200 });
-    } catch (error: any) {
-      console.error("Error processing log request:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Error processing log request:", errMsg);
+      return new Response(JSON.stringify({ error: errMsg }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });

@@ -983,7 +983,7 @@ export const checkAccountability = action({
     if (!email || !user.remindersEnabled) return { success: false, reason: "No email or reminders disabled" };
 
     // Cooldown: only send one reminder every 24 hours
-    const lastSent = (user as any).lastReminderSentAt || 0;
+    const lastSent = user.lastReminderSentAt || 0;
     const cooldownMs = 24 * 60 * 60 * 1000;
     if (Date.now() - lastSent < cooldownMs) {
       return { success: false, reason: "In cooldown" };
@@ -1004,8 +1004,6 @@ export const checkAccountability = action({
 
     // 2. Check for overworking (6+ days straight)
     const logs = await ctx.runQuery(api.notebook.listLogs, { limit: 10 });
-    let consecutiveDays = 0;
-    const todayStr = new Date().toISOString().slice(0, 10);
 
     // Simple check: how many of the last 7 days have logs?
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -1040,8 +1038,9 @@ export const checkAccountability = action({
         await ctx.runMutation(api.notebook.recordReminderSent, { userId: user._id });
 
         return { success: true, sent: true, message: alertMessage };
-      } catch (e: any) {
-        return { success: false, error: e.message };
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        return { success: false, error: errMsg };
       }
     }
 

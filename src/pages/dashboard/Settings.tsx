@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -10,30 +10,58 @@ import { toast } from "sonner";
 import { Loader2, User, Key, ShieldCheck, Twitter, Info, Bell, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
+interface ProfileType {
+  _id: string;
+  email?: string;
+  displayName?: string;
+  twitterHandle?: string;
+  bio?: string;
+  accountabilityEnabled?: boolean;
+  remindersEnabled?: boolean;
+  licenseType?: string;
+  licenseKey?: string;
+}
+
+function generateSafeHardwareId() {
+  if (typeof window !== "undefined" && window.crypto) {
+    if (typeof window.crypto.randomUUID === "function") {
+      return `WEB-${window.crypto.randomUUID().replace(/-/g, "").substring(0, 12).toUpperCase()}`;
+    }
+    const array = new Uint32Array(4);
+    window.crypto.getRandomValues(array);
+    const hex = Array.from(array, (dec) => dec.toString(16).padStart(8, "0")).join("");
+    return `WEB-${hex.substring(0, 12).toUpperCase()}`;
+  }
+  return `WEB-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+}
+
 export default function SettingsPage() {
   const profile = useQuery(api.notebook.currentProfile);
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return <SettingsForm profile={profile} />;
+}
+
+function SettingsForm({ profile }: { profile: ProfileType }) {
   const updateProfile = useMutation(api.notebook.updateProfile);
   const activateLicense = useMutation(api.licenses.activate);
 
-  const [displayName, setDisplayName] = useState("");
-  const [twitterHandle, setTwitterHandle] = useState("");
-  const [bio, setBio] = useState("");
-  const [accountabilityEnabled, setAccountabilityEnabled] = useState(false);
-  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [displayName, setDisplayName] = useState(profile.displayName || "");
+  const [twitterHandle, setTwitterHandle] = useState(profile.twitterHandle || "");
+  const [bio, setBio] = useState(profile.bio || "");
+  const [accountabilityEnabled, setAccountabilityEnabled] = useState(!!profile.accountabilityEnabled);
+  const [remindersEnabled, setRemindersEnabled] = useState(!!profile.remindersEnabled);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   const [licenseKey, setLicenseKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
-
-  useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.displayName || "");
-      setTwitterHandle(profile.twitterHandle || "");
-      setBio(profile.bio || "");
-      setAccountabilityEnabled(!!profile.accountabilityEnabled);
-      setRemindersEnabled(!!profile.remindersEnabled);
-    }
-  }, [profile]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +75,9 @@ export default function SettingsPage() {
         remindersEnabled,
       });
       toast.success("Profile updated successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update profile");
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Failed to update profile");
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -60,31 +89,20 @@ export default function SettingsPage() {
 
     setIsActivating(true);
     try {
-      // For this app, we'll use a fixed or generated hardware ID if needed,
-      // but let's assume "WEB-APP" for now as a placeholder or use a random one.
-      const hwId = localStorage.getItem("idb_hw_id") || `WEB-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      const hwId = localStorage.getItem("idb_hw_id") || generateSafeHardwareId();
       localStorage.setItem("idb_hw_id", hwId);
 
       const result = await activateLicense({ key: licenseKey.trim(), hardwareId: hwId });
       if (result.success) {
         toast.success(`License activated: ${result.type}`);
-        // Don't clear the key — it will appear in the "Active License Key" display
-        // once the profile re-fetches, and stays visible in the input until then.
       }
-    } catch (error: any) {
-      toast.error(error.message || "Activation failed");
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Activation failed");
     } finally {
       setIsActivating(false);
     }
   };
-
-  if (!profile) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -236,8 +254,10 @@ export default function SettingsPage() {
                   size="sm"
                   className="h-8 text-[10px] uppercase font-mono"
                   onClick={() => {
-                    navigator.clipboard.writeText(profile.licenseKey!);
-                    toast.success("License key copied to clipboard");
+                    if (profile.licenseKey) {
+                      navigator.clipboard.writeText(profile.licenseKey);
+                      toast.success("License key copied to clipboard");
+                    }
                   }}
                 >
                   Copy

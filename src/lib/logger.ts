@@ -23,7 +23,7 @@ export const Logger = {
    * @param error The error object or message to log.
    * @param context Optional context information (e.g., component stack, action name).
    */
-  logError: async (error: any, context?: string) => {
+  logError: async (error: unknown, context?: string) => {
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : undefined;
     const timestamp = Date.now();

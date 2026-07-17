@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation, action, internalAction } from "./_generated/server";
+import { mutation, query, internalMutation, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { isAdmin, getCurrentUser } from "./users";
 import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
