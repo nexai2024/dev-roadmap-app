@@ -177,9 +177,22 @@ const schema = defineSchema(
       context: v.optional(v.string()),
       timestamp: v.number(),
     }).index("by_timestamp", ["timestamp"]),
+
+    // AI Coach insights — one per user per date
+    aiInsights: defineTable({
+      userId: v.id("users"),
+      date: v.string(), // ISO YYYY-MM-DD
+      insightType: v.union(v.literal("daily-debrief"), v.literal("weekly-summary")),
+      content: v.string(), // AI-generated coaching text (markdown)
+      model: v.string(), // e.g. "gemini-2.0-flash"
+      promptTokens: v.optional(v.number()),
+      completionTokens: v.optional(v.number()),
+    })
+      .index("by_user_date", ["userId", "date"])
+      .index("by_user", ["userId"]),
   },
   {
-    schemaValidation: false,
+    schemaValidation: true,
   },
 );
 

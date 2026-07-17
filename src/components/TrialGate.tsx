@@ -93,7 +93,7 @@ export function TrialGate({ children, profile }: TrialGateProps) {
             </Button>
 </Link>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              One-time payment · Lifetime accessAZ                         VC
+              One-time payment · Lifetime access
             </p>
           </div>
         </div>

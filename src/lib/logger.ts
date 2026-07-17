@@ -1,7 +1,22 @@
 /**
  * Centralized logging service for the application.
- * Sends logs to the custom POST /api/logs endpoint.
+ * Sends logs to the Convex HTTP /api/logs endpoint.
  */
+
+function getLogsEndpoint(): string {
+  // Convex URL looks like https://xxx.convex.cloud
+  // HTTP routes are at the same origin under the path
+  const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
+  if (convexUrl) {
+    // Replace the protocol from convex cloud URL to the HTTP site URL
+    // Convex HTTP actions are served from the same deployment URL
+    const base = convexUrl.replace(/\.cloud$/, ".site");
+    return `${base}/api/logs`;
+  }
+  // Fallback (dev only)
+  return "/api/logs";
+}
+
 export const Logger = {
   /**
    * Log an error to the centralized logging service.
@@ -13,8 +28,7 @@ export const Logger = {
     const stack = error instanceof Error ? error.stack : undefined;
     const timestamp = Date.now();
 
-    // Use the site's own API endpoint
-    const url = "/api/logs";
+    const url = getLogsEndpoint();
 
     try {
       const response = await fetch(url, {
@@ -40,3 +54,4 @@ export const Logger = {
     }
   },
 };
+
