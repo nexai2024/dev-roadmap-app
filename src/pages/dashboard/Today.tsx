@@ -338,7 +338,11 @@ export default function TodayPage() {
             todayStr={todayStr}
             todayLog={todayLog}
             currentPhase={currentPhase}
-            upsertLog={upsertLog}
+            upsertLog={async (args) => {
+              const res = await upsertLog(args);
+              triggerCoach(args.date);
+              return res;
+            }}
             hasPreviousUnloggedDays={hasPreviousUnloggedDays}
             activeDay={today}
           />
