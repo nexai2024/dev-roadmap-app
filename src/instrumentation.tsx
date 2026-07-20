@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { toast } from "sonner";
 import React, { useEffect } from "react";
 import { Logger } from "@/lib/logger";
@@ -50,6 +51,11 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Report to Sentry
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: info.componentStack ?? undefined } },
+    });
+
     // Log the error centrally
     Logger.logError(error, info.componentStack ?? undefined);
 

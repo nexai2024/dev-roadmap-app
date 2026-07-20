@@ -37,7 +37,19 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-
+import * as Sentry from '@sentry/react';
+// Add this button component to your app to test Sentry's error tracking
+function ErrorButton() {
+  return (
+    <button
+      onClick={() => {
+        throw new Error('This is your first error!');
+      }}
+    >
+      Break the world
+    </button>
+  );
+}
 const WEEKDAY_OF_DAY = (n: number) => {
   // Day 1 = Monday. (n - 1) % 7 = 0..6 → Mon..Sun.
   const idx = (n - 1) % 7;
@@ -307,6 +319,7 @@ export default function TodayPage() {
             >
               →
             </Button>
+            <ErrorButton />
           </div>
         </div>
       </div>
@@ -1210,7 +1223,6 @@ function CoachCard({
       </div>
     );
   }
-
   return null;
 }
 
