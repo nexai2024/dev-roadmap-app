@@ -165,45 +165,46 @@ export const syncMyLicense = mutation({
     const user = await getCurrentUser(ctx);
     if (!user) return { success: false, reason: "Not logged in" };
 
-    if (user.isPaid) {
-      return { success: true, isPaid: true };
-    }
-
     const email = user.email?.toLowerCase().trim();
-    const allLicenses = await ctx.db.query("licenses").collect();
 
+    // Strict matching: find active license belonging specifically to this user's email
     let activeLicense = null;
     if (email) {
+      const allLicenses = await ctx.db.query("licenses").collect();
       activeLicense = allLicenses.find(
         (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === email
       );
     }
 
-    // If returning directly from payment redirect or recent active license exists
-    if (!activeLicense && (args.fromPaymentRedirect || allLicenses.length > 0)) {
-      const recentLicense = allLicenses
-        .filter((l) => l.status === "active")
-        .sort((a, b) => b._creationTime - a._creationTime)[0];
-
-      if (recentLicense && (recentLicense._creationTime > Date.now() - 24 * 60 * 60 * 1000)) {
-        activeLicense = recentLicense;
-      }
-    }
-
-    if (activeLicense || args.fromPaymentRedirect) {
-      await ctx.db.patch(user._id, { isPaid: true });
-      if (activeLicense && user.email && !activeLicense.userEmail) {
-        await ctx.db.patch(activeLicense._id, { userEmail: user.email });
+    if (activeLicense) {
+      if (!user.isPaid) {
+        await ctx.db.patch(user._id, { isPaid: true });
       }
       return {
         success: true,
         isPaid: true,
-        type: activeLicense?.type ?? "lifetime",
-        key: activeLicense?.key ?? "TEST-100-PAID",
+        type: activeLicense.type,
+        key: activeLicense.key,
       };
     }
 
+    // If no active license matches this user's email, do NOT auto-upgrade
     return { success: false, isPaid: !!user.isPaid };
+  },
+});
+
+/**
+ * Mutation to reset the current user's isPaid status back to false.
+ * Useful for testing trial expiration and upgrade flows on demo/test accounts.
+ */
+export const resetMyPaidStatus = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Not logged in");
+
+    await ctx.db.patch(user._id, { isPaid: false });
+    return { success: true, isPaid: false };
   },
 });
 
