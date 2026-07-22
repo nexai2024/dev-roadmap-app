@@ -95,7 +95,7 @@ createRoot(document.getElementById("root")!, {
               <Route path="/auth/*" element={<AuthPage />} />
               <Route path="/licensing-test" element={<LicensingTest />} />
               <Route path="/error-test" element={<ErrorTest />} />
-              <Route path="/dashboard" element={
+              <Route path="/dashboard/*" element={
                 <ErrorBoundary>
                   <DashboardLayout />
                 </ErrorBoundary>
