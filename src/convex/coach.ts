@@ -1,7 +1,7 @@
-"use node";
 
-// AI Daily Coach — Gemini-powered personalized coaching after each daily log.
-// Uses the Gemini REST API directly via fetch (no npm dependency).
+
+// AI Daily Coach — OpenAI-powered personalized coaching after each daily log.
+// Uses the OpenAI REST API directly via fetch (no npm dependency).
 
 import { action, internalMutation, query } from "./_generated/server";
 import { internal, api } from "./_generated/api";
@@ -89,10 +89,10 @@ export const storeInsight = internalMutation({
 });
 
 // =============================================
-// ACTION — Generate daily debrief via Gemini
+// ACTION — Generate daily debrief via OpenAI
 // =============================================
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const OPENAI_MODEL = "gpt-4o-mini";
 
 const SYSTEM_PROMPT = `You are "Protocol Coach" — a direct, no-BS mentor for solo founders doing the Protocol100 100-day challenge. This is a structured program where someone goes from zero coding experience to shipping their first paid SaaS product.
 
@@ -116,7 +116,7 @@ Format rules:
 export const generateDailyDebrief = action({
   args: { date: v.string() },
   returns: v.string(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<string> => {
     // 1. Get current user profile + today's log + recent history
     const profile = await ctx.runQuery(api.notebook.currentProfile);
     if (!profile) throw new Error("Not authenticated");
@@ -140,18 +140,18 @@ export const generateDailyDebrief = action({
 
     // 5. Build the user prompt with real data
     const moodLabel = todayLog.mood
-      ? { "locked-in": "Locked-in 🔥", "shipping": "Shipping 🚀", "stuck": "Stuck 😤", "shipping-slow": "Slow but moving 🐢" }[todayLog.mood] ?? todayLog.mood
+      ? ({ "locked-in": "Locked-in 🔥", "shipping": "Shipping 🚀", "stuck": "Stuck 😤", "shipping-slow": "Slow but moving 🐢" } as Record<string, string>)[todayLog.mood] ?? todayLog.mood
       : "Not set";
 
     const inputsCount = todayLog.inputsDone?.length ?? 0;
 
     // Calculate trends from recent logs
-    const recentHours = recentLogs.map((l) => l.hoursCoded);
+    const recentHours = recentLogs.map((l: any) => l.hoursCoded);
     const avgHours = recentHours.length > 0
-      ? (recentHours.reduce((a, b) => a + b, 0) / recentHours.length).toFixed(1)
+      ? (recentHours.reduce((a: number, b: number) => a + b, 0) / recentHours.length).toFixed(1)
       : "0";
 
-    const recentMRR = recentLogs.map((l) => l.mrrUsd);
+    const recentMRR = recentLogs.map((l: any) => l.mrrUsd);
     const mrrTrend = recentMRR.length >= 2
       ? recentMRR[0] > recentMRR[recentMRR.length - 1] ? "↑ rising" : recentMRR[0] < recentMRR[recentMRR.length - 1] ? "↓ declining" : "→ flat"
       : "insufficient data";
@@ -184,54 +184,51 @@ ${todayLog.notes ? `- Notes: "${todayLog.notes}"` : ""}
 
 Give a personalized daily debrief based on this data.`;
 
-    // 6. Call Gemini API
-    const apiKey = process.env.GEMINI_API_KEY;
+    // 6. Call OpenAI API
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is not configured. Set it in your Convex dashboard.");
+      throw new Error("OPENAI_API_KEY environment variable is not configured. Set it in your Convex dashboard.");
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+    const url = "https://api.openai.com/v1/chat/completions";
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
-        },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: userPrompt }],
-          },
+        model: OPENAI_MODEL,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
         ],
-        generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 400,
-          topP: 0.9,
-        },
+        temperature: 0.8,
+        max_tokens: 400,
+        top_p: 0.9,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
       throw new Error(`AI Coach temporarily unavailable (${response.status}). Please try again.`);
     }
 
     const data = await response.json();
 
     // Extract the generated text
-    const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data?.choices?.[0]?.message?.content;
     if (!content) {
-      console.error("Unexpected Gemini response structure:", JSON.stringify(data));
+      console.error("Unexpected OpenAI response structure:", JSON.stringify(data));
       throw new Error("AI Coach returned an empty response. Please try again.");
     }
 
     // Extract token usage if available
-    const usage = data?.usageMetadata;
-    const promptTokens = usage?.promptTokenCount;
-    const completionTokens = usage?.candidatesTokenCount;
+    const usage = data?.usage;
+    const promptTokens = usage?.prompt_tokens;
+    const completionTokens = usage?.completion_tokens;
 
     // 7. Store the insight
     await ctx.runMutation(internal.coach.storeInsight, {
@@ -239,7 +236,7 @@ Give a personalized daily debrief based on this data.`;
       date: args.date,
       insightType: "daily-debrief",
       content,
-      model: GEMINI_MODEL,
+      model: OPENAI_MODEL,
       promptTokens,
       completionTokens,
     });

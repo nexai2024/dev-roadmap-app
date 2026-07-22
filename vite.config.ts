@@ -1,4 +1,5 @@
 import { vlyPlugin } from "@vly-ai/integrations";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -6,7 +7,18 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vlyPlugin(), react(), tailwindcss()],
+  plugins: [
+    vlyPlugin(),
+    react(),
+    tailwindcss(),
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      // Silently skip upload if auth token is not set
+      silent: !process.env.SENTRY_AUTH_TOKEN,
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -14,7 +26,7 @@ export default defineConfig({
   },
   build: {
     // Enable source maps for better debugging (disable in production if needed)
-    sourcemap: false,
+    sourcemap: true,
     // Optimize chunk splitting
     rollupOptions: {
       output: {

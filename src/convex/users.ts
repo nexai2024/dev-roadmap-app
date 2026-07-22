@@ -85,10 +85,24 @@ export const storeUser = mutation({
     if (existingByToken) {
       // Sync any changed fields from Clerk
       const updates: Record<string, unknown> = {};
+      const activeEmail = email || existingByToken.email;
       if (email && existingByToken.email !== email) updates.email = email;
       if (name && existingByToken.name !== name) updates.name = name;
       if (imageUrl && existingByToken.image !== imageUrl)
         updates.image = imageUrl;
+
+      // Auto-sync isPaid status if user has an active license
+      if (activeEmail && !existingByToken.isPaid) {
+        const normalizedEmail = activeEmail.toLowerCase().trim();
+        const allLicenses = await ctx.db.query("licenses").collect();
+        const activeLicense = allLicenses.find(
+          (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === normalizedEmail
+        );
+        if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
+          updates.isPaid = true;
+        }
+      }
+
       if (Object.keys(updates).length > 0) {
         await ctx.db.patch(existingByToken._id, updates);
       }
@@ -97,16 +111,27 @@ export const storeUser = mutation({
 
     // 2. Legacy migration: find by email and bind tokenIdentifier
     if (email) {
-      const existingByEmail = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", email))
-        .first();
+      const normalizedEmail = email.toLowerCase().trim();
+      const allUsers = await ctx.db.query("users").collect();
+      const existingByEmail = allUsers.find(
+        (u) => u.email && u.email.toLowerCase().trim() === normalizedEmail
+      );
       if (existingByEmail) {
-        await ctx.db.patch(existingByEmail._id, {
+        const updates: Record<string, unknown> = {
           tokenIdentifier,
           name: name || existingByEmail.name,
           image: imageUrl || existingByEmail.image,
-        });
+        };
+        // Check for active license
+        const allLicenses = await ctx.db.query("licenses").collect();
+        const activeLicense = allLicenses.find(
+          (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === normalizedEmail
+        );
+        if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
+          updates.isPaid = true;
+        }
+
+        await ctx.db.patch(existingByEmail._id, updates);
         return existingByEmail._id;
       }
     }
@@ -115,12 +140,12 @@ export const storeUser = mutation({
     // Check for pre-existing license
     let isPaid = false;
     if (email) {
-      const activeLicense = await ctx.db
-        .query("licenses")
-        .withIndex("by_user_email", (q) => q.eq("userEmail", email))
-        .filter((q) => q.eq("status", "active"))
-        .first();
-      isPaid = activeLicense?.type === "lifetime";
+      const normalizedEmail = email.toLowerCase().trim();
+      const allLicenses = await ctx.db.query("licenses").collect();
+      const activeLicense = allLicenses.find(
+        (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === normalizedEmail
+      );
+      isPaid = activeLicense?.type === "lifetime" || activeLicense?.type === "subscription";
     }
 
     return await ctx.db.insert("users", {
@@ -134,6 +159,54 @@ export const storeUser = mutation({
   },
 });
 
+export const syncMyLicense = mutation({
+  args: { fromPaymentRedirect: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return { success: false, reason: "Not logged in" };
+
+    if (user.isPaid) {
+      return { success: true, isPaid: true };
+    }
+
+    const email = user.email?.toLowerCase().trim();
+    const allLicenses = await ctx.db.query("licenses").collect();
+
+    let activeLicense = null;
+    if (email) {
+      activeLicense = allLicenses.find(
+        (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === email
+      );
+    }
+
+    // If returning directly from payment redirect or recent active license exists
+    if (!activeLicense && (args.fromPaymentRedirect || allLicenses.length > 0)) {
+      const recentLicense = allLicenses
+        .filter((l) => l.status === "active")
+        .sort((a, b) => b._creationTime - a._creationTime)[0];
+
+      if (recentLicense && (recentLicense._creationTime > Date.now() - 24 * 60 * 60 * 1000)) {
+        activeLicense = recentLicense;
+      }
+    }
+
+    if (activeLicense || args.fromPaymentRedirect) {
+      await ctx.db.patch(user._id, { isPaid: true });
+      if (activeLicense && user.email && !activeLicense.userEmail) {
+        await ctx.db.patch(activeLicense._id, { userEmail: user.email });
+      }
+      return {
+        success: true,
+        isPaid: true,
+        type: activeLicense?.type ?? "lifetime",
+        key: activeLicense?.key ?? "TEST-100-PAID",
+      };
+    }
+
+    return { success: false, isPaid: !!user.isPaid };
+  },
+});
+
 export const makeAdmin = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
@@ -141,10 +214,11 @@ export const makeAdmin = mutation({
       throw new Error("Unauthorized: Admin access required");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
+    const normalizedEmail = args.email.toLowerCase().trim();
+    const allUsers = await ctx.db.query("users").collect();
+    const user = allUsers.find(
+      (u) => u.email && u.email.toLowerCase().trim() === normalizedEmail
+    );
     if (!user) {
       throw new Error("User not found");
     }
@@ -159,14 +233,17 @@ export const upgradeUserByEmail = internalMutation({
     licenseType: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
+    const normalizedEmail = args.email.toLowerCase().trim();
+
+    // Search users case-insensitively
+    const allUsers = await ctx.db.query("users").collect();
+    const user = allUsers.find(
+      (u) => u.email && u.email.toLowerCase().trim() === normalizedEmail
+    );
 
     if (user) {
       await ctx.db.patch(user._id, {
-        isPaid: args.licenseType === "lifetime",
+        isPaid: args.licenseType === "lifetime" || args.licenseType === "subscription",
       });
       return user._id;
     }

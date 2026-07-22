@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Lock, Sparkles, ArrowRight } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { Lock, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface TrialGateProps {
   children: React.ReactNode;
@@ -8,11 +12,30 @@ interface TrialGateProps {
     startedAt?: number;
     isPaid?: boolean;
     displayName?: string;
+    email?: string;
   } | null;
 }
 
 export function TrialGate({ children, profile }: TrialGateProps) {
   const navigate = useNavigate();
+  const syncMyLicense = useMutation(api.users.syncMyLicense);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    // Attempt auto-sync on mount in case webhook finished or license exists
+    if (profile && !profile.isPaid) {
+      const isPaymentReturn = window.location.search.includes("payment=success");
+      syncMyLicense({ fromPaymentRedirect: isPaymentReturn || undefined })
+        .then((res) => {
+          if (res?.success && res?.isPaid) {
+            toast.success("Payment verified! Full access unlocked.");
+          }
+        })
+        .catch((err) => {
+          console.warn("Sync license notice:", err?.message || err);
+        });
+    }
+  }, [profile, syncMyLicense]);
 
   // If no profile or no startedAt, we don't gate (yet)
   if (!profile || !profile.startedAt) {
@@ -30,8 +53,59 @@ export function TrialGate({ children, profile }: TrialGateProps) {
     return <>{children}</>;
   }
 
+  const stripeUrl = profile.email
+    ? `https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06?prefilled_email=${encodeURIComponent(profile.email)}`
+    : "https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06";
+
   const handleUnlock = () => {
-    navigate("/dashboard/billing");
+    try {
+      if (window.top && window.top !== window) {
+        window.top.location.href = stripeUrl;
+      } else {
+        window.location.href = stripeUrl;
+      }
+    } catch {
+      window.open(stripeUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const activateLicense = useMutation(api.licenses.activate);
+  const [inputKey, setInputKey] = useState("");
+  const [isActivatingKey, setIsActivatingKey] = useState(false);
+
+  const handleSyncAccess = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await syncMyLicense();
+      if (res.success && res.isPaid) {
+        toast.success("License synchronized! Welcome to Protocol100.");
+      } else {
+        toast.info("No active payment/license found for your account email yet.");
+      }
+    } catch {
+      toast.error("Error verifying payment status.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleActivateKey = async () => {
+    if (!inputKey.trim()) return;
+    setIsActivatingKey(true);
+    try {
+      const hwId = localStorage.getItem("idb_hw_id") || `WEB-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      localStorage.setItem("idb_hw_id", hwId);
+
+      const res = await activateLicense({ key: inputKey.trim(), hardwareId: hwId });
+      if (res.success) {
+        toast.success(`License key activated! Tier: ${res.type}`);
+        setInputKey("");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Activation failed. Please check your key.");
+    } finally {
+      setIsActivatingKey(false);
+    }
   };
 
   return (
@@ -77,17 +151,57 @@ export function TrialGate({ children, profile }: TrialGateProps) {
                 </li>
               </ul>
             </div>
-<Link to="https://buy.stripe.com/5kQaEZghogn5bGpfzlc7u00">
             <Button
               size="lg"
               className="w-full h-14 text-lg font-mono"
               onClick={handleUnlock}
             >
-              Unlock Full Protocol
+              Unlock Full Protocol ($99)
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-</Link>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full font-mono text-xs flex items-center justify-center gap-1.5"
+              onClick={handleSyncAccess}
+              disabled={isSyncing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+              Already Paid? Verify & Unlock Access
+            </Button>
+
+            {/* License Key Activation Form directly on Paywall */}
+            <div className="pt-2 pb-1 space-y-2 border-t border-dashed border-border mt-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputKey}
+                  onChange={(e) => setInputKey(e.target.value)}
+                  placeholder="Paste License Key (XXXX-XXXX-XXXX-XXXX)"
+                  className="flex-1 px-3 py-2 text-xs font-mono rounded-md border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="font-mono text-xs shrink-0"
+                  onClick={handleActivateKey}
+                  disabled={isActivatingKey || !inputKey.trim()}
+                >
+                  {isActivatingKey ? "Activating..." : "Activate Key"}
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full font-mono text-xs text-muted-foreground"
+              onClick={() => navigate("/dashboard/billing")}
+            >
+              View Billing & Membership Details
+            </Button>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
               One-time payment · Lifetime access
             </p>
           </div>

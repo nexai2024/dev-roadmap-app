@@ -1,3 +1,4 @@
+import "./instrument"; // ← Sentry init — MUST be first import
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
@@ -11,6 +12,9 @@ import "./index.css";
 import "./types/global.d.ts";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { Analytics } from "@vercel/analytics/react"
+import * as Sentry from "@sentry/react";
+
+const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 // Lazy load route components for better code splitting (extensionless paths)
 const Landing = lazy(() => import("./pages/Landing"));
@@ -73,7 +77,11 @@ function RouteSyncer() {
   return null;
 }
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById("root")!, {
+  onUncaughtError: Sentry.reactErrorHandler(),
+  onCaughtError: Sentry.reactErrorHandler(),
+  onRecoverableError: Sentry.reactErrorHandler(),
+}).render(
   <StrictMode>
     <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}>
     <VlyToolbar />
@@ -82,7 +90,7 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <RouteSyncer />
           <Suspense fallback={<RouteLoading />}>
-            <Routes>
+            <SentryRoutes>
               <Route path="/" element={<Landing />} />
               <Route path="/auth/*" element={<AuthPage />} />
               <Route path="/licensing-test" element={<LicensingTest />} />
@@ -111,7 +119,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="billing" element={<BillingPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
-            </Routes>
+            </SentryRoutes>
           </Suspense>
         </BrowserRouter>
         <Toaster />
