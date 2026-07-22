@@ -47,13 +47,12 @@ export const currentProfile = query({
       licenseType = "lifetime";
     }
 
-    const email = user.email;
+    const email = user.email?.toLowerCase().trim();
     if (email) {
-      const activeLicense = await ctx.db
-        .query("licenses")
-        .withIndex("by_user_email", (q) => q.eq("userEmail", email))
-        .filter((q) => q.eq("status", "active"))
-        .first();
+      const allLicenses = await ctx.db.query("licenses").collect();
+      const activeLicense = allLicenses.find(
+        (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === email
+      );
       if (activeLicense) {
         if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
           licenseType = activeLicense.type;
