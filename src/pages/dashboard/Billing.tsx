@@ -33,7 +33,7 @@ export default function BillingPage() {
   const handleManualSync = async () => {
     setIsSyncing(true);
     try {
-      const res = await syncMyLicense();
+      const res = await syncMyLicense({});
       if (res.success && res.isPaid) {
         toast.success("License synchronized! You have full access.");
       } else {
