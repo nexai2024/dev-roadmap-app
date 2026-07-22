@@ -52,6 +52,7 @@ export default function SettingsPage() {
 function SettingsForm({ profile }: { profile: ProfileType }) {
   const updateProfile = useMutation(api.notebook.updateProfile);
   const activateLicense = useMutation(api.licenses.activate);
+  const resetMyPaidStatus = useMutation(api.users.resetMyPaidStatus);
 
   const [displayName, setDisplayName] = useState(profile.displayName || "");
   const [twitterHandle, setTwitterHandle] = useState(profile.twitterHandle || "");
@@ -226,21 +227,38 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="p-4 rounded-md border bg-muted/50 flex items-start gap-4">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <div className="font-mono text-sm font-bold uppercase tracking-wider">
-                  Current Tier: <span className="text-primary">{(profile.licenseType ?? "free").toUpperCase()}</span>
+            <div className="p-4 rounded-md border bg-muted/50 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/10 p-2 rounded-full mt-0.5">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {(profile.licenseType === "free" || !profile.licenseType) && "You are currently on the 3-day free trial."}
-                  {profile.licenseType === "trial" && "You have active trial access."}
-                  {profile.licenseType === "subscription" && "You have an active annual subscription."}
-                  {profile.licenseType === "lifetime" && "You have permanent lifetime access."}
-                </p>
+                <div>
+                  <div className="font-mono text-sm font-bold uppercase tracking-wider">
+                    Current Tier: <span className="text-primary">{(profile.licenseType ?? "free").toUpperCase()}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(profile.licenseType === "free" || !profile.licenseType) && "You are currently on the 3-day free trial."}
+                    {profile.licenseType === "trial" && "You have active trial access."}
+                    {profile.licenseType === "subscription" && "You have an active annual subscription."}
+                    {profile.licenseType === "lifetime" && "You have permanent lifetime access."}
+                  </p>
+                </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="font-mono text-xs text-destructive border-destructive/30 shrink-0"
+                onClick={async () => {
+                  try {
+                    await resetMyPaidStatus({});
+                    toast.success("Account reset to Trial mode");
+                  } catch {
+                    toast.error("Failed to reset account");
+                  }
+                }}
+              >
+                Reset to Trial
+              </Button>
             </div>
 
             {profile.licenseKey && (
