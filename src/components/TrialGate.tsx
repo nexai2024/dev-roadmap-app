@@ -76,7 +76,7 @@ export function TrialGate({ children, profile }: TrialGateProps) {
   const handleSyncAccess = async () => {
     setIsSyncing(true);
     try {
-      const res = await syncMyLicense();
+      const res = await syncMyLicense({});
       if (res.success && res.isPaid) {
         toast.success("License synchronized! Welcome to Protocol100.");
       } else {
