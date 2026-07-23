@@ -43,15 +43,11 @@ export const currentProfile = query({
     let licenseType = "free";
     let licenseKey: string | undefined;
 
-    if (user.isPaid) {
-      licenseType = "lifetime";
-    }
-
     const email = user.email?.toLowerCase().trim();
-    if (email) {
+    if (email && email.includes("@") && email.length > 3) {
       const allLicenses = await ctx.db.query("licenses").collect();
       const activeLicense = allLicenses.find(
-        (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === email
+        (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === email
       );
       if (activeLicense) {
         if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
@@ -59,6 +55,10 @@ export const currentProfile = query({
           licenseKey = activeLicense.key;
         }
       }
+    }
+
+    if (user.isPaid && licenseType === "free") {
+      licenseType = "lifetime";
     }
 
     const isPaid = !!(user.isPaid || licenseType === "lifetime" || licenseType === "subscription");

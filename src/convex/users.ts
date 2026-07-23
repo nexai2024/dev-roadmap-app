@@ -91,15 +91,17 @@ export const storeUser = mutation({
       if (imageUrl && existingByToken.image !== imageUrl)
         updates.image = imageUrl;
 
-      // Auto-sync isPaid status if user has an active license
-      if (activeEmail && !existingByToken.isPaid) {
+      // Auto-sync isPaid status ONLY if user has an explicit active license matching their verified email
+      if (activeEmail && activeEmail.includes("@") && !existingByToken.isPaid) {
         const normalizedEmail = activeEmail.toLowerCase().trim();
-        const allLicenses = await ctx.db.query("licenses").collect();
-        const activeLicense = allLicenses.find(
-          (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === normalizedEmail
-        );
-        if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
-          updates.isPaid = true;
+        if (normalizedEmail.length > 3) {
+          const allLicenses = await ctx.db.query("licenses").collect();
+          const activeLicense = allLicenses.find(
+            (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === normalizedEmail
+          );
+          if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
+            updates.isPaid = true;
+          }
         }
       }
 
@@ -110,7 +112,7 @@ export const storeUser = mutation({
     }
 
     // 2. Legacy migration: find by email and bind tokenIdentifier
-    if (email) {
+    if (email && email.includes("@")) {
       const normalizedEmail = email.toLowerCase().trim();
       const allUsers = await ctx.db.query("users").collect();
       const existingByEmail = allUsers.find(
@@ -122,10 +124,10 @@ export const storeUser = mutation({
           name: name || existingByEmail.name,
           image: imageUrl || existingByEmail.image,
         };
-        // Check for active license
+        // Check for active license matching email
         const allLicenses = await ctx.db.query("licenses").collect();
         const activeLicense = allLicenses.find(
-          (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === normalizedEmail
+          (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === normalizedEmail
         );
         if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
           updates.isPaid = true;
@@ -136,16 +138,17 @@ export const storeUser = mutation({
       }
     }
 
-    // 3. Create new user
-    // Check for pre-existing license
+    // 3. Create new user — default isPaid to false for all new signups
     let isPaid = false;
-    if (email) {
+    if (email && email.includes("@")) {
       const normalizedEmail = email.toLowerCase().trim();
-      const allLicenses = await ctx.db.query("licenses").collect();
-      const activeLicense = allLicenses.find(
-        (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === normalizedEmail
-      );
-      isPaid = activeLicense?.type === "lifetime" || activeLicense?.type === "subscription";
+      if (normalizedEmail.length > 3) {
+        const allLicenses = await ctx.db.query("licenses").collect();
+        const activeLicense = allLicenses.find(
+          (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === normalizedEmail
+        );
+        isPaid = activeLicense?.type === "lifetime" || activeLicense?.type === "subscription";
+      }
     }
 
     return await ctx.db.insert("users", {
@@ -167,12 +170,12 @@ export const syncMyLicense = mutation({
 
     const email = user.email?.toLowerCase().trim();
 
-    // Strict matching: find active license belonging specifically to this user's email
+    // Strict matching: find active license belonging specifically to this user's verified email
     let activeLicense = null;
-    if (email) {
+    if (email && email.includes("@") && email.length > 3) {
       const allLicenses = await ctx.db.query("licenses").collect();
       activeLicense = allLicenses.find(
-        (l) => l.status === "active" && l.userEmail && l.userEmail.toLowerCase().trim() === email
+        (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === email
       );
     }
 
