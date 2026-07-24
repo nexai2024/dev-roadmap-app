@@ -54,105 +54,40 @@ http.route({
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const customerEmail = session.customer_details?.email || session.customer_email;
+      const clientReferenceId = session.client_reference_id;
       
       console.log(`[Stripe Webhook] checkout.session.completed — email: ${customerEmail}, session: ${session.id}`);
 
-      if (customerEmail) {
-        // 1. Generate & send license key (automatically inserts license record)
-        console.log(`[Stripe Webhook] Step 1: Generating license for ${customerEmail}`);
-        await ctx.runAction(internal.licenses.generateAndSend, {
-          userEmail: customerEmail,
-          type: "lifetime",
+      if (clientReferenceId) {
+        // Direct purchase with user ID available
+        console.log(`[Stripe Webhook] Upgrading user by ID: ${clientReferenceId}`);
+        await ctx.runMutation(internal.users.upgradeUserById, {
+          userId: clientReferenceId as import("./_generated/dataModel").Id<"users">,
         });
-
-        // 2. Locate user and upgrade to paid (lifetime)
-        console.log(`[Stripe Webhook] Step 2: Upgrading user ${customerEmail} to lifetime`);
+      } else if (customerEmail) {
+        // Fallback: upgrade by email if client_reference_id is missing
+        console.log(`[Stripe Webhook] Upgrading user by email fallback: ${customerEmail}`);
         await ctx.runMutation(internal.users.upgradeUserByEmail, {
           email: customerEmail,
           licenseType: "lifetime",
         });
+      } else {
+        console.warn("[Stripe Webhook] checkout.session.completed received but no clientReferenceId or email found in session");
+      }
 
-        // 3. Synchronize to Clerk user metadata
-        console.log(`[Stripe Webhook] Step 3: Syncing Clerk metadata for ${customerEmail}`);
+      if (customerEmail) {
+        // Synchronize to Clerk user metadata
+        console.log(`[Stripe Webhook] Syncing Clerk metadata for ${customerEmail}`);
         await ctx.runAction(api.clerkSync.syncClerkUser, {
           email: customerEmail,
           tier: "lifetime",
         });
-
-        console.log(`[Stripe Webhook] ✅ All steps completed for ${customerEmail}`);
-      } else {
-        console.warn("[Stripe Webhook] checkout.session.completed received but no customer email found in session");
       }
+
+      console.log(`[Stripe Webhook] ✅ All steps completed for session ${session.id}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }),
-});
-
-// Webhook to generate and send license
-http.route({
-  path: "/webhook/license/create",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    // Basic shared secret authentication
-    const authHeader = request.headers.get("Authorization");
-    const secret = process.env.VLY_WEBHOOK_SECRET;
-    if (!secret) {
-      console.error("VLY_WEBHOOK_SECRET is not set");
-      return new Response("Configuration Error", { status: 500 });
-    }
-    if (authHeader !== `Bearer ${secret}`) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
-    const { userEmail, type } = await request.json();
-    if (!userEmail || !type) {
-      return new Response("Missing userEmail or type", { status: 400 });
-    }
-    await ctx.runAction(internal.licenses.generateAndSend, { userEmail, type });
-    return new Response(null, { status: 200 });
-  }),
-});
-
-// API to activate license
-http.route({
-  path: "/api/license/activate",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const { key, hardwareId } = await request.json();
-    if (!key || !hardwareId) {
-      return new Response("Missing key or hardwareId", { status: 400 });
-    }
-    try {
-      const result = await ctx.runMutation(api.licenses.activate, { key, hardwareId });
-      return new Response(JSON.stringify(result), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      return new Response(JSON.stringify({ error: errMsg }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  }),
-});
-
-// API to validate license
-http.route({
-  path: "/api/license/validate",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const { key, hardwareId } = await request.json();
-    if (!key || !hardwareId) {
-      return new Response("Missing key or hardwareId", { status: 400 });
-    }
-    const result = await ctx.runQuery(api.licenses.validate, { key, hardwareId });
-    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

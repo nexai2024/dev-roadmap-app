@@ -24,72 +24,20 @@ export const createInternal = internalMutation({
   args: {
     key: v.string(),
     type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
-    userEmail: v.string(),
-    expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const licenseId = await ctx.db.insert("licenses", {
       key: args.key,
       type: args.type,
       status: "active",
-      userEmail: args.userEmail,
-      expiresAt: args.expiresAt,
     });
     return licenseId;
-  },
-});
-
-export const generateAndSend = internalAction({
-  args: {
-    userEmail: v.string(),
-    type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
-  },
-  handler: async (ctx, args) => {
-    const key = generateKey();
-
-    let expiresAt: number | undefined;
-    const now = Date.now();
-    if (args.type === "trial") {
-      expiresAt = now + 14 * 24 * 60 * 60 * 1000; // 14 days
-    } else if (args.type === "subscription") {
-      expiresAt = now + 365 * 24 * 60 * 60 * 1000; // 1 year
-    }
-
-    await ctx.runMutation(internal.licenses.createInternal, {
-      key,
-      type: args.type,
-      userEmail: args.userEmail,
-      expiresAt,
-    });
-
-    // Send email via vly.ai email service
-    try {
-      await axios.post(
-        "https://email.vly.ai/send_otp",
-        {
-          to: args.userEmail,
-          otp: key, // Using the key as the "OTP" in this template for delivery
-          appName: process.env.VLY_APP_NAME || "a vly.ai application",
-          subject: "Your License Key", // Assuming the service might support custom subjects or we use the OTP one
-        },
-        {
-          headers: {
-            "x-api-key": process.env.VLY_EMAIL_API_KEY ?? "",
-          },
-        },
-      );
-    } catch (error) {
-      console.error("Failed to send license email", error);
-    }
-
-    return { success: true, key };
   },
 });
 
 export const activate = mutation({
   args: {
     key: v.string(),
-    hardwareId: v.string(),
   },
   handler: async (ctx, args) => {
     // Resolve authenticated user from Convex DB (not raw JWT claims)
@@ -122,34 +70,11 @@ export const activate = mutation({
       throw new Error(`License is ${license.status}`);
     }
 
-    if (license.expiresAt && license.expiresAt < Date.now()) {
-      await ctx.db.patch(license._id, { status: "expired" });
-      throw new Error("License has expired");
-    }
-
-    const userEmail = user.email?.toLowerCase().trim();
-    const licenseEmail = license.userEmail?.toLowerCase().trim();
-
-    // If license belongs to a different email address, reject
-    if (licenseEmail && userEmail && licenseEmail !== userEmail) {
-      throw new Error(`License belongs to ${license.userEmail}`);
-    }
-
-    // Bind to user email + update status
-    const patchData: Record<string, unknown> = {};
-    if (!license.userEmail && userEmail) {
-      patchData.userEmail = user.email;
-    }
-    if (!license.activatedAt) {
-      patchData.activatedAt = Date.now();
-    }
-    if (args.hardwareId) {
-      patchData.hardwareId = args.hardwareId;
-    }
-
-    if (Object.keys(patchData).length > 0) {
-      await ctx.db.patch(license._id, patchData);
-    }
+    // Mark as redeemed
+    await ctx.db.patch(license._id, {
+      status: "redeemed",
+      redeemedBy: user._id
+    });
 
     // Set user as paid
     if (!user.isPaid) {
@@ -157,37 +82,6 @@ export const activate = mutation({
     }
 
     return { success: true, type: license.type };
-  },
-});
-
-export const validate = query({
-  args: {
-    key: v.string(),
-    hardwareId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const license = await ctx.db
-      .query("licenses")
-      .withIndex("by_key", (q) => q.eq("key", args.key))
-      .unique();
-
-    if (!license) {
-      return { valid: false, reason: "License not found" };
-    }
-
-    if (license.status !== "active") {
-      return { valid: false, reason: `License is ${license.status}` };
-    }
-
-    if (license.expiresAt && license.expiresAt < Date.now()) {
-      return { valid: false, reason: "License has expired" };
-    }
-
-    if (license.hardwareId !== args.hardwareId) {
-      return { valid: false, reason: "Hardware ID mismatch" };
-    }
-
-    return { valid: true, type: license.type, expiresAt: license.expiresAt };
   },
 });
 
@@ -226,9 +120,7 @@ export const listAll = query({
 
 export const adminCreateLicense = mutation({
   args: {
-    userEmail: v.string(),
     type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
-    expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     if (!(await isAdmin(ctx))) {
@@ -240,20 +132,7 @@ export const adminCreateLicense = mutation({
       key,
       type: args.type,
       status: "active",
-      userEmail: args.userEmail,
-      expiresAt: args.expiresAt,
     });
-
-    // Automatically set isPaid for lifetime licenses
-    if (args.type === "lifetime") {
-      const customerUser = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", args.userEmail))
-        .first();
-      if (customerUser) {
-        await ctx.db.patch(customerUser._id, { isPaid: true });
-      }
-    }
 
     return { success: true, key, licenseId };
   },
@@ -279,12 +158,9 @@ export const adminRevokeLicense = mutation({
 
     await ctx.db.patch(license._id, { status: "revoked" });
 
-    // Remove isPaid status if revoking a lifetime license
-    if (license.type === "lifetime") {
-      const customerUser = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", license.userEmail))
-        .first();
+    // Remove isPaid status if revoking a lifetime license and it was redeemed
+    if (license.type === "lifetime" && license.redeemedBy) {
+      const customerUser = await ctx.db.get(license.redeemedBy as import("./_generated/dataModel").Id<"users">);
       if (customerUser) {
         await ctx.db.patch(customerUser._id, { isPaid: false });
       }

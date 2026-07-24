@@ -90,10 +90,7 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
 
     setIsActivating(true);
     try {
-      const hwId = localStorage.getItem("idb_hw_id") || generateSafeHardwareId();
-      localStorage.setItem("idb_hw_id", hwId);
-
-      const result = await activateLicense({ key: licenseKey.trim(), hardwareId: hwId });
+      const result = await activateLicense({ key: licenseKey.trim() });
       if (result.success) {
         toast.success(`License activated: ${result.type}`);
       }
