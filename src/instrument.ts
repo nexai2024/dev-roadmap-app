@@ -1,16 +1,15 @@
 import * as Sentry from "@sentry/react";
 
 Sentry.init({
-  dsn: "https://d3b19bee108d629dbebd26153d10672e@o4510662650363904.ingest.us.sentry.io/4511767886168065",
+  dsn: "https://5099ce747e861ced5400bad3de95e3f0@o4511748217896960.ingest.us.sentry.io/4511789760380928",
+
   dataCollection: {
     // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
     // https://docs.sentry.io/platforms/javascript/guides/react/configuration/options/#dataCollection
     // userInfo: false,
     // httpBodies: []
-  }
+  },
 });
-
-
 
 /* import * as Sentry from "@sentry/react";
 import { useEffect } from "react";
