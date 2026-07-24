@@ -19,7 +19,10 @@ interface TrialGateProps {
 export function TrialGate({ children, profile }: TrialGateProps) {
   const navigate = useNavigate();
   const syncMyLicense = useMutation(api.users.syncMyLicense);
+  const activateLicense = useMutation(api.licenses.activate);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [inputKey, setInputKey] = useState("");
+  const [isActivatingKey, setIsActivatingKey] = useState(false);
 
   useEffect(() => {
     // Attempt auto-sync on mount in case webhook finished or license exists
@@ -68,10 +71,6 @@ export function TrialGate({ children, profile }: TrialGateProps) {
       window.open(stripeUrl, "_blank", "noopener,noreferrer");
     }
   };
-
-  const activateLicense = useMutation(api.licenses.activate);
-  const [inputKey, setInputKey] = useState("");
-  const [isActivatingKey, setIsActivatingKey] = useState(false);
 
   const handleSyncAccess = async () => {
     setIsSyncing(true);
