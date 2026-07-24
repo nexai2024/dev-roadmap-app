@@ -85,25 +85,10 @@ export const storeUser = mutation({
     if (existingByToken) {
       // Sync any changed fields from Clerk
       const updates: Record<string, unknown> = {};
-      const activeEmail = email || existingByToken.email;
       if (email && existingByToken.email !== email) updates.email = email;
       if (name && existingByToken.name !== name) updates.name = name;
       if (imageUrl && existingByToken.image !== imageUrl)
         updates.image = imageUrl;
-
-      // Auto-sync isPaid status ONLY if user has an explicit active license matching their verified email
-      if (activeEmail && activeEmail.includes("@") && !existingByToken.isPaid) {
-        const normalizedEmail = activeEmail.toLowerCase().trim();
-        if (normalizedEmail.length > 3) {
-          const allLicenses = await ctx.db.query("licenses").collect();
-          const activeLicense = allLicenses.find(
-            (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === normalizedEmail
-          );
-          if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
-            updates.isPaid = true;
-          }
-        }
-      }
 
       if (Object.keys(updates).length > 0) {
         await ctx.db.patch(existingByToken._id, updates);
@@ -124,14 +109,6 @@ export const storeUser = mutation({
           name: name || existingByEmail.name,
           image: imageUrl || existingByEmail.image,
         };
-        // Check for active license matching email
-        const allLicenses = await ctx.db.query("licenses").collect();
-        const activeLicense = allLicenses.find(
-          (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === normalizedEmail
-        );
-        if (activeLicense && (activeLicense.type === "lifetime" || activeLicense.type === "subscription")) {
-          updates.isPaid = true;
-        }
 
         await ctx.db.patch(existingByEmail._id, updates);
         return existingByEmail._id;
@@ -140,16 +117,6 @@ export const storeUser = mutation({
 
     // 3. Create new user — default isPaid to false for all new signups
     let isPaid = false;
-    if (email && email.includes("@")) {
-      const normalizedEmail = email.toLowerCase().trim();
-      if (normalizedEmail.length > 3) {
-        const allLicenses = await ctx.db.query("licenses").collect();
-        const activeLicense = allLicenses.find(
-          (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === normalizedEmail
-        );
-        isPaid = activeLicense?.type === "lifetime" || activeLicense?.type === "subscription";
-      }
-    }
 
     return await ctx.db.insert("users", {
       tokenIdentifier,
@@ -159,40 +126,6 @@ export const storeUser = mutation({
       role: "user",
       isPaid,
     });
-  },
-});
-
-export const syncMyLicense = mutation({
-  args: { fromPaymentRedirect: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) return { success: false, reason: "Not logged in" };
-
-    const email = user.email?.toLowerCase().trim();
-
-    // Strict matching: find active license belonging specifically to this user's verified email
-    let activeLicense = null;
-    if (email && email.includes("@") && email.length > 3) {
-      const allLicenses = await ctx.db.query("licenses").collect();
-      activeLicense = allLicenses.find(
-        (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === email
-      );
-    }
-
-    if (activeLicense) {
-      if (!user.isPaid) {
-        await ctx.db.patch(user._id, { isPaid: true });
-      }
-      return {
-        success: true,
-        isPaid: true,
-        type: activeLicense.type,
-        key: activeLicense.key,
-      };
-    }
-
-    // If no active license matches this user's email, do NOT auto-upgrade
-    return { success: false, isPaid: !!user.isPaid };
   },
 });
 
@@ -252,6 +185,16 @@ export const upgradeUserByEmail = internalMutation({
       return user._id;
     }
     return null;
+  },
+});
+
+export const upgradeUserById = internalMutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { isPaid: true });
+    return args.userId;
   },
 });
 

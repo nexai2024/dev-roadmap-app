@@ -42,13 +42,9 @@ export default function LicensingTest() {
   };
 
   const handleGenerate = async () => {
-    if (!email) {
-      toast.error("Please enter a customer email");
-      return;
-    }
     setIsGenerating(true);
     try {
-      const result = await createLicense({ userEmail: email, type: licenseType });
+      const result = await createLicense({ type: licenseType });
       if (result.success) {
         toast.success(`License generated successfully! Key: ${result.key}`);
         setEmail("");
@@ -108,7 +104,6 @@ export default function LicensingTest() {
 
   // Filter licenses based on search query
   const filteredLicenses = allLicenses?.filter((l) =>
-    l.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.key.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -181,16 +176,6 @@ export default function LicensingTest() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs font-mono">Customer Email</Label>
-                  <Input
-                    id="email"
-                    placeholder="user@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="type" className="text-xs font-mono">License Tier</Label>
                   <Select value={licenseType} onValueChange={(val) => setLicenseType(val as "trial" | "subscription" | "lifetime")}>
                     <SelectTrigger className="font-mono text-sm">
@@ -233,34 +218,29 @@ export default function LicensingTest() {
                 <table className="w-full border-collapse text-left text-xs font-mono">
                   <thead>
                     <tr className="border-b bg-muted/50 text-muted-foreground">
-                      <th className="p-3 font-semibold">User Email</th>
                       <th className="p-3 font-semibold">License Key</th>
                       <th className="p-3 font-semibold">Type</th>
                       <th className="p-3 font-semibold">Status</th>
-                      <th className="p-3 font-semibold">HW Binding</th>
                       <th className="p-3 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {!filteredLicenses ? (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={4} className="p-8 text-center text-muted-foreground">
                           <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
                           Loading licenses...
                         </td>
                       </tr>
                     ) : filteredLicenses.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={4} className="p-8 text-center text-muted-foreground">
                           No licenses found
                         </td>
                       </tr>
                     ) : (
                       filteredLicenses.map((license) => (
                         <tr key={license._id} className="border-b hover:bg-muted/30">
-                          <td className="p-3 truncate max-w-[140px]" title={license.userEmail}>
-                            {license.userEmail}
-                          </td>
                           <td className="p-3 font-semibold select-all text-[11px]">
                             {license.key}
                           </td>
@@ -276,14 +256,10 @@ export default function LicensingTest() {
                           <td className="p-3">
                             <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-bold ${
                               license.status === "active" ? "bg-emerald-500/10 text-emerald-600" :
-                              license.status === "expired" ? "bg-amber-500/10 text-amber-600" :
                               "bg-rose-500/10 text-rose-600"
                             }`}>
                               {license.status}
                             </span>
-                          </td>
-                          <td className="p-3 text-muted-foreground truncate max-w-[90px]" title={license.hardwareId || "Unbound"}>
-                            {license.hardwareId ? "Bound" : "Unbound"}
                           </td>
                           <td className="p-3 text-right">
                             {license.status === "active" && (

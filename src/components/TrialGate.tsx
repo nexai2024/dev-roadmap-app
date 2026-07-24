@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Lock, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
+import { Lock, Sparkles, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface TrialGateProps {
   children: React.ReactNode;
   profile: {
+    _id?: string;
     startedAt?: number;
     isPaid?: boolean;
     displayName?: string;
@@ -18,24 +19,6 @@ interface TrialGateProps {
 
 export function TrialGate({ children, profile }: TrialGateProps) {
   const navigate = useNavigate();
-  const syncMyLicense = useMutation(api.users.syncMyLicense);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  useEffect(() => {
-    // Attempt auto-sync on mount in case webhook finished or license exists
-    if (profile && !profile.isPaid) {
-      const isPaymentReturn = window.location.search.includes("payment=success");
-      syncMyLicense({ fromPaymentRedirect: isPaymentReturn || undefined })
-        .then((res) => {
-          if (res?.success && res?.isPaid) {
-            toast.success("Payment verified! Full access unlocked.");
-          }
-        })
-        .catch((err) => {
-          console.warn("Sync license notice:", err?.message || err);
-        });
-    }
-  }, [profile, syncMyLicense]);
 
   // If no profile or no startedAt, we don't gate (yet)
   if (!profile || !profile.startedAt) {
@@ -54,8 +37,8 @@ export function TrialGate({ children, profile }: TrialGateProps) {
   }
 
   const stripeUrl = profile.email
-    ? `https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06?prefilled_email=${encodeURIComponent(profile.email)}`
-    : "https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06";
+    ? `https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06?client_reference_id=${profile._id}&prefilled_email=${encodeURIComponent(profile.email)}`
+    : `https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06?client_reference_id=${profile._id}`;
 
   const handleUnlock = () => {
     try {
@@ -73,30 +56,11 @@ export function TrialGate({ children, profile }: TrialGateProps) {
   const [inputKey, setInputKey] = useState("");
   const [isActivatingKey, setIsActivatingKey] = useState(false);
 
-  const handleSyncAccess = async () => {
-    setIsSyncing(true);
-    try {
-      const res = await syncMyLicense({});
-      if (res.success && res.isPaid) {
-        toast.success("License synchronized! Welcome to Protocol100.");
-      } else {
-        toast.info("No active payment/license found for your account email yet.");
-      }
-    } catch {
-      toast.error("Error verifying payment status.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const handleActivateKey = async () => {
     if (!inputKey.trim()) return;
     setIsActivatingKey(true);
     try {
-      const hwId = localStorage.getItem("idb_hw_id") || `WEB-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-      localStorage.setItem("idb_hw_id", hwId);
-
-      const res = await activateLicense({ key: inputKey.trim(), hardwareId: hwId });
+      const res = await activateLicense({ key: inputKey.trim() });
       if (res.success) {
         toast.success(`License key activated! Tier: ${res.type}`);
         setInputKey("");
@@ -158,17 +122,6 @@ export function TrialGate({ children, profile }: TrialGateProps) {
             >
               Unlock Full Protocol ($99)
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full font-mono text-xs flex items-center justify-center gap-1.5"
-              onClick={handleSyncAccess}
-              disabled={isSyncing}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-              Already Paid? Verify & Unlock Access
             </Button>
 
             {/* License Key Activation Form directly on Paywall */}

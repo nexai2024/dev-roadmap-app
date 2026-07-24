@@ -161,14 +161,10 @@ const schema = defineSchema(
     licenses: defineTable({
       key: v.string(),
       type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
-      status: v.union(v.literal("active"), v.literal("revoked"), v.literal("expired")),
-      userEmail: v.string(),
-      hardwareId: v.optional(v.string()),
-      expiresAt: v.optional(v.number()), // Unix timestamp in ms
-      activatedAt: v.optional(v.number()), // Unix timestamp in ms
+      status: v.union(v.literal("active"), v.literal("revoked"), v.literal("expired"), v.literal("redeemed")),
+      redeemedBy: v.optional(v.string()), // user ID who redeemed the code
     })
-      .index("by_key", ["key"])
-      .index("by_user_email", ["userEmail"]),
+      .index("by_key", ["key"]),
 
     // Centralized Logging
     logs: defineTable({

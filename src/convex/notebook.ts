@@ -41,23 +41,8 @@ export const currentProfile = query({
     if (!user) return null;
 
     let licenseType = "free";
-    let licenseKey: string | undefined;
 
-    const email = user.email?.toLowerCase().trim();
-    if (email && email.includes("@") && email.length > 3) {
-      const allLicenses = await ctx.db.query("licenses").collect();
-      const activeLicense = allLicenses.find(
-        (l) => l.status === "active" && l.userEmail && l.userEmail.includes("@") && l.userEmail.toLowerCase().trim() === email
-      );
-      if (activeLicense) {
-        if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
-          licenseType = activeLicense.type;
-          licenseKey = activeLicense.key;
-        }
-      }
-    }
-
-    if (user.isPaid && licenseType === "free") {
+    if (user.isPaid) {
       licenseType = "lifetime";
     }
 
@@ -96,7 +81,6 @@ export const currentProfile = query({
       twitterHandle: user.twitterHandle,
       isPaid,
       licenseType,
-      licenseKey,
       accountabilityEnabled: user.accountabilityEnabled,
       remindersEnabled: user.remindersEnabled,
       suggestedDay,
@@ -329,20 +313,6 @@ export const upsertLog = mutation({
 
     // Trial gating: 3 days free.
     let isPaid = user.isPaid;
-    if (!isPaid && user.email) {
-      const activeLicense = await ctx.db
-        .query("licenses")
-        .withIndex("by_user_email", (q) => q.eq("userEmail", user.email!))
-        .filter((q) => q.eq("status", "active"))
-        .first();
-      if (activeLicense) {
-        if (!activeLicense.expiresAt || activeLicense.expiresAt > Date.now()) {
-          if (activeLicense.type === "lifetime" || activeLicense.type === "subscription") {
-            isPaid = true;
-          }
-        }
-      }
-    }
 
     if (!isPaid && user.startedAt) {
       const diff = Math.floor((Date.now() - user.startedAt) / (1000 * 60 * 60 * 24));
