@@ -13,7 +13,6 @@ import "./types/global.d.ts";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { Analytics } from "@vercel/analytics/react"
 import * as Sentry from "@sentry/react";
-
 const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 // Lazy load route components for better code splitting (extensionless paths)
@@ -84,9 +83,11 @@ createRoot(document.getElementById("root")!, {
 }).render(
   <StrictMode>
     <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}>
+    {/* <ConvexProviderWithClerk client={convex} useAuth={useAuth}> */}
+    <ConvexProviderWithClerk client={convex} useAuth={useAuth}> 
     <VlyToolbar />
     <InstrumentationProvider>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+      
         <BrowserRouter>
           <RouteSyncer />
           <Suspense fallback={<RouteLoading />}>
@@ -124,8 +125,10 @@ createRoot(document.getElementById("root")!, {
         </BrowserRouter>
         <Toaster />
         <Analytics />
-      </ConvexProviderWithClerk>
+      
     </InstrumentationProvider>
-    </ClerkProvider>
+ 
+    </ConvexProviderWithClerk>
+       </ClerkProvider>
   </StrictMode>,
 );

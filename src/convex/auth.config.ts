@@ -1,34 +1,14 @@
-/**
- * Convex Auth Configuration for Clerk Integration
- *
- * Supports both Production (custom domain: clerk.protocol100.xyz / protocol100.xyz)
- * and Development (Clerk dev domain: actual-opossum-46.clerk.accounts.dev).
- * Also supports process.env.CLERK_JWT_ISSUER_DOMAIN set via Convex environment variables.
- */
+import { AuthConfig } from "convex/server";
+
 export default {
   providers: [
-    ...(process.env.CLERK_JWT_ISSUER_DOMAIN
-      ? [
-          {
-            domain: process.env.CLERK_JWT_ISSUER_DOMAIN,
-            applicationID: "convex",
-          },
-        ]
-      : []),
     {
-      // Production Clerk Custom Domain
-      domain: "https://clerk.protocol100.xyz",
+      // Replace with your Clerk Frontend API URL
+      // or with `process.env.CLERK_JWT_ISSUER_DOMAIN`
+      // and configure CLERK_JWT_ISSUER_DOMAIN on the Convex Dashboard
+      // See https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances
+      domain: process.env.CLERK_JWT_ISSUER_DOMAIN!,
       applicationID: "convex",
     },
-    {
-      // Production Apex Domain
-      domain: "https://protocol100.xyz",
-      applicationID: "convex",
-    },
-    {
-      // Development Clerk Instance Domain
-      domain: "https://actual-opossum-46.clerk.accounts.dev",
-      applicationID: "convex",
-    },
-  ],
-};
+  ]
+} satisfies AuthConfig;
