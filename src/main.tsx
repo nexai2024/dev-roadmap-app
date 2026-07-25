@@ -83,52 +83,48 @@ createRoot(document.getElementById("root")!, {
 }).render(
   <StrictMode>
     <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}>
-    {/* <ConvexProviderWithClerk client={convex} useAuth={useAuth}> */}
-    <ConvexProviderWithClerk client={convex} useAuth={useAuth}> 
-    <VlyToolbar />
-    <InstrumentationProvider>
-      
-        <BrowserRouter>
-          <RouteSyncer />
-          <Suspense fallback={<RouteLoading />}>
-            <SentryRoutes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/auth/*" element={<AuthPage />} />
-              <Route path="/licensing-test" element={<LicensingTest />} />
-              <Route path="/error-test" element={<ErrorTest />} />
-              <Route path="/dashboard/*" element={
-                <ErrorBoundary>
-                  <DashboardLayout />
-                </ErrorBoundary>
-              }>
-                <Route index element={<DashboardIndex />} />
-                <Route path="today" element={<TodayPage />} />
-                <Route path="phases" element={<PhasesPage />} />
-                <Route path="actions" element={<ActionsPage />} />
-                <Route path="inputs" element={<InputsPage />} />
-                <Route path="milestones" element={<MilestonesPage />} />
-                <Route path="logbook" element={<LogbookPage />} />
-                <Route path="review" element={<ReviewPage />} />
-                <Route path="monthly-review" element={<MonthlyReviewPage />} />
-                <Route path="distribution" element={<DistributionPage />} />
-                <Route path="concierge" element={<ConciergePage />} />
-                <Route path="rules" element={<RulesPage />} />
-                <Route path="resources" element={<ResourcesPage />} />
-                <Route path="prereqs" element={<PrereqsPage />} />
-                <Route path="setup" element={<SetupPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="billing" element={<BillingPage />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </SentryRoutes>
-          </Suspense>
-        </BrowserRouter>
-        <Toaster />
-        <Analytics />
-      
-    </InstrumentationProvider>
- 
-    </ConvexProviderWithClerk>
-       </ClerkProvider>
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}> 
+        <VlyToolbar />
+        <InstrumentationProvider>
+          <BrowserRouter>
+            <RouteSyncer />
+            <Suspense fallback={<RouteLoading />}>
+              <SentryRoutes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth/*" element={<AuthPage />} />
+                <Route path="/licensing-test" element={<LicensingTest />} />
+                <Route path="/error-test" element={<ErrorTest />} />
+                <Route path="/dashboard/*" element={
+                  <ErrorBoundary>
+                    <DashboardLayout />
+                  </ErrorBoundary>
+                }>
+                  <Route index element={<DashboardIndex />} />
+                  <Route path="today" element={<TodayPage />} />
+                  <Route path="phases" element={<PhasesPage />} />
+                  <Route path="actions" element={<ActionsPage />} />
+                  <Route path="inputs" element={<InputsPage />} />
+                  <Route path="milestones" element={<MilestonesPage />} />
+                  <Route path="logbook" element={<LogbookPage />} />
+                  <Route path="review" element={<ReviewPage />} />
+                  <Route path="monthly-review" element={<MonthlyReviewPage />} />
+                  <Route path="distribution" element={<DistributionPage />} />
+                  <Route path="concierge" element={<ConciergePage />} />
+                  <Route path="rules" element={<RulesPage />} />
+                  <Route path="resources" element={<ResourcesPage />} />
+                  <Route path="prereqs" element={<PrereqsPage />} />
+                  <Route path="setup" element={<SetupPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="billing" element={<BillingPage />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </SentryRoutes>
+            </Suspense>
+          </BrowserRouter>
+          <Toaster />
+          <Analytics />
+        </InstrumentationProvider>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   </StrictMode>,
 );

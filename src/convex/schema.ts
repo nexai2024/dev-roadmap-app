@@ -163,6 +163,7 @@ const schema = defineSchema(
       type: v.union(v.literal("trial"), v.literal("subscription"), v.literal("lifetime")),
       status: v.union(v.literal("active"), v.literal("revoked"), v.literal("expired"), v.literal("redeemed")),
       redeemedBy: v.optional(v.string()), // user ID who redeemed the code
+      userEmail: v.optional(v.string()),
     })
       .index("by_key", ["key"]),
 
