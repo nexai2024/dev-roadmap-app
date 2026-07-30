@@ -1016,3 +1016,57 @@ export const checkAccountability = action({
     return { success: true, sent: false, message: "All clear" };
   }
 });
+
+// =============================================
+// RESET USER DATA
+// =============================================
+
+export const resetUserData = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("No user record found");
+
+    // 1. Delete user-specific progress/app data in other tables
+    const tables = [
+      "dailyLogs",
+      "keyActionProgress",
+      "weeklyReviews",
+      "milestones",
+      "monthlyReviews",
+      "outreachLogs",
+      "conciergeOrders",
+      "aiInsights",
+    ] as const;
+
+    for (const table of tables) {
+      const records = await ctx.db
+        .query(table)
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+
+      for (const record of records) {
+        await ctx.db.delete(record._id);
+      }
+    }
+
+    // 2. Reset user profile setup/onboarding fields
+    // Keep: name, image, email, tokenIdentifier, emailVerificationTime, isAnonymous, role, isPaid
+    await ctx.db.patch(user._id, {
+      displayName: undefined,
+      startedAt: undefined,
+      currentPhase: undefined,
+      currentDay: undefined,
+      bio: undefined,
+      twitterHandle: undefined,
+      accountabilityEnabled: undefined,
+      remindersEnabled: undefined,
+      lastReminderSentAt: undefined,
+    });
+
+    return null;
+  },
+});
