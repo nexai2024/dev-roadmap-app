@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, User, Key, ShieldCheck, Twitter, Info, Bell, AlertTriangle } from "lucide-react";
+import { Loader2, User, Key, ShieldCheck, Twitter, Info, Bell, AlertTriangle, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 interface ProfileType {
@@ -63,6 +63,27 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
 
   const [licenseKey, setLicenseKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
+
+  const resetUserData = useMutation(api.notebook.resetUserData);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetData = async () => {
+    const confirmed = window.confirm(
+      "WARNING: This will permanently delete all of your progress, logs, milestones, and reviews. This action CANNOT be undone. Your license key and subscription status will be preserved.\n\nAre you sure you want to proceed?"
+    );
+    if (!confirmed) return;
+
+    setIsResetting(true);
+    try {
+      await resetUserData();
+      toast.success("All application data has been reset successfully");
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      toast.error(errMsg || "Failed to reset data");
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,6 +324,45 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                   <Info className="h-3 w-3" /> Keys are usually sent via email after purchase.
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone Section */}
+        <Card className="nb-card border-2 border-destructive/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-mono uppercase tracking-wider text-sm text-destructive">
+              <Trash2 className="h-4 w-4" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription>
+              Irreversible actions related to your account and progress.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-md border border-destructive/20 bg-destructive/5">
+              <div className="space-y-1">
+                <h4 className="font-mono text-xs uppercase tracking-widest font-bold text-destructive">
+                  Reset Application Data
+                </h4>
+                <p className="text-xs text-muted-foreground max-w-xl">
+                  This will permanently delete all of your daily logs, milestones, reviews, outreach,
+                  and other app data. Your active license key and subscription info will NOT be lost.
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={handleResetData}
+                disabled={isResetting}
+                className="font-mono text-xs uppercase tracking-wider shrink-0"
+              >
+                {isResetting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Reset All Data
+              </Button>
             </div>
           </CardContent>
         </Card>
