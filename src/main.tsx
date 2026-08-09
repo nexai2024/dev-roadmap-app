@@ -10,7 +10,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import "./types/global.d.ts";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth } from "@clerk/react";
 import { Analytics } from "@vercel/analytics/react"
 import * as Sentry from "@sentry/react";
 const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
