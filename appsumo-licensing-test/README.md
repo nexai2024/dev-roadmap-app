@@ -6,10 +6,12 @@ Production endpoints are **branded on protocol100.xyz** (not Convex `.site` URLs
 
 | Setting | URL |
 |---------|-----|
-| **Webhook URL** | `https://protocol100.xyz/v2/webhooks` |
-| **OAuth Redirect URL** | `https://protocol100.xyz/appsumo` |
+| **Webhook URL** | `https://www.protocol100.xyz/v2/webhooks` |
+| **OAuth Redirect URL** | `https://www.protocol100.xyz/appsumo` |
 
-Alias webhook (same handler): `https://protocol100.xyz/webhook/appsumo`
+Use the **www** host — apex `protocol100.xyz` 308-redirects and AppSumo validation can fail on redirects.
+
+Alias webhook (same handler): `https://www.protocol100.xyz/webhook/appsumo`
 
 ## How it works
 
@@ -23,8 +25,8 @@ Set on the Convex deployment:
 
 - `APPSUMO_API_KEY` — HMAC + Licensing API
 - `APPSUMO_CLIENT_ID` / `APPSUMO_CLIENT_SECRET` — after URLs validate
-- `APPSUMO_REDIRECT_URI` — **must match exactly:** `https://protocol100.xyz/appsumo`
-- `SITE_URL` — `https://protocol100.xyz`
+- `APPSUMO_REDIRECT_URI` — **must match exactly:** `https://www.protocol100.xyz/appsumo`
+- `SITE_URL` — `https://www.protocol100.xyz`
 
 ## Vercel env vars
 
