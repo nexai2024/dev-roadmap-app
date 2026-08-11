@@ -20,6 +20,7 @@ interface ProfileType {
   remindersEnabled?: boolean;
   licenseType?: string;
   licenseKey?: string;
+  appsumoTier?: number;
 }
 
 function generateSafeHardwareId() {
@@ -258,7 +259,11 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                     {(profile.licenseType === "free" || !profile.licenseType) && "You are currently on the 3-day free trial."}
                     {profile.licenseType === "trial" && "You have active trial access."}
                     {profile.licenseType === "subscription" && "You have an active annual subscription."}
-                    {profile.licenseType === "lifetime" && "You have permanent lifetime access."}
+                    {profile.licenseType === "lifetime" && (
+                      profile.licenseKey
+                        ? `AppSumo lifetime access${profile.appsumoTier ? ` (tier ${profile.appsumoTier})` : ""}.`
+                        : "You have permanent lifetime access."
+                    )}
                   </p>
                 </div>
               </div>
@@ -309,7 +314,7 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                     id="licenseKey"
                     value={licenseKey}
                     onChange={(e) => setLicenseKey(e.target.value)}
-                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    placeholder="XXXX-XXXX-XXXX-XXXX or AppSumo UUID"
                     className="font-mono"
                   />
                   <Button
@@ -321,7 +326,9 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Info className="h-3 w-3" /> Keys are usually sent via email after purchase.
+                  <Info className="h-3 w-3" /> AppSumo buyers: activate via{" "}
+                  <a href="/appsumo" className="underline underline-offset-2">/appsumo</a>
+                  {" "}OAuth, or paste your license UUID here.
                 </p>
               </div>
             </div>

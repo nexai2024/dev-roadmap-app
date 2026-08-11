@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as appsumo from "../appsumo.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as clerkSync from "../clerkSync.js";
 import type * as coach from "../coach.js";
@@ -25,6 +26,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  appsumo: typeof appsumo;
   "auth/emailOtp": typeof auth_emailOtp;
   clerkSync: typeof clerkSync;
   coach: typeof coach;
