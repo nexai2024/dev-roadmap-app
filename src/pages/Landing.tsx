@@ -516,7 +516,7 @@ export default function Landing() {
 
       <footer className="border-t border-border py-6 px-6">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-4 justify-between text-xs text-muted-foreground">
-          <span>          © Protocol100 · AI-accelerated 100-day challenge - A Solopreneur Solutions SaaS</span>
+          <span>          © Protocol100 · AI-accelerated 100-day challenge - A <Link to="https://solopreneur.solutions" className="underline">Solopreneur Solutions</Link> SaaS</span>
           <span className="font-mono">
             [{` `}
             <Link to="/roadmap" className="underline">
