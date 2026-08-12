@@ -105,8 +105,8 @@ export default function BillingPage() {
                     className="w-full font-mono text-base h-12"
                     onClick={() => {
                       const url = profile.email
-                        ? `https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06?client_reference_id=${profile._id}&prefilled_email=${encodeURIComponent(profile.email)}`
-                        : `https://buy.stripe.com/test_5kQdR9faBgiu5AJ5Mk73G06?client_reference_id=${profile._id}`;
+                        ? `https://buy.stripe.com/00w6oIbKTaPCdVCbxlgA801?client_reference_id=${profile._id}&prefilled_email=${encodeURIComponent(profile.email)}`
+                        : `https://buy.stripe.com/00w6oIbKTaPCdVCbxlgA801?client_reference_id=${profile._id}`;
                       try {
                         if (window.top && window.top !== window) {
                           window.top.location.href = url;

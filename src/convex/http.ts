@@ -58,20 +58,10 @@ http.route({
     let event: Stripe.Event;
     try {
       event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
-    } catch (err: any) {
-      console.warn("Signature verification warning:", err.message);
-      // Fallback: If payload is valid Stripe event JSON, process it (helps in dev/test setups with dynamic CLI secrets)
-      try {
-        const parsed = JSON.parse(rawBody);
-        if (parsed && parsed.type && parsed.data) {
-          event = parsed as Stripe.Event;
-          console.log("[Stripe Webhook] Fallback to parsed event payload for:", event.type);
-        } else {
-          return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
-        }
-      } catch {
-        return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
-      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Invalid signature";
+      console.warn("[Stripe Webhook] Signature verification failed:", message);
+      return new Response(`Webhook signature verification failed: ${message}`, { status: 400 });
     }
 
     console.log(`[Stripe Webhook] Received event: ${event.type} (id: ${event.id})`);

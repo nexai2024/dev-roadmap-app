@@ -46,16 +46,16 @@ export const activate = mutation({
       throw new Error("Not authenticated");
     }
 
-    const cleanKey = args.key.trim().toUpperCase();
-    if (
-      cleanKey === "TEST-100-PAID" ||
-      cleanKey === "PROTOCOL100-LIFETIME" ||
-      cleanKey === "PAYMENT-SUCCESS" ||
-      cleanKey === "UNLOCK-FULL-PROTOCOL"
-    ) {
-      await ctx.db.patch(user._id, { isPaid: true });
-      return { success: true, type: "lifetime" };
-    }
+    // const cleanKey = args.key.trim().toUpperCase();
+    // if (
+    //   cleanKey === "TEST-100-PAID" ||
+    //   cleanKey === "PROTOCOL100-LIFETIME" ||
+    //   cleanKey === "PAYMENT-SUCCESS" ||
+    //   cleanKey === "UNLOCK-FULL-PROTOCOL"
+    // ) {
+    //   await ctx.db.patch(user._id, { isPaid: true });
+    //   return { success: true, type: "lifetime" };
+    // }
 
     // AppSumo UUID keys (RFC 4122) — bind if webhook already stored the license
     const rawKey = args.key.trim();
