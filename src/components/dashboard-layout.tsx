@@ -201,6 +201,13 @@ export default function DashboardLayout() {
 
             <div className="flex-1" />
 
+            <Link
+              to="/roadmap"
+              className="hidden sm:inline-flex px-2 py-1 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:underline shrink-0"
+            >
+              Roadmap
+            </Link>
+
             <div className="hidden sm:flex items-center gap-2">
               {profile?.startedAt && !profile?.isPaid && (
                 <KpiPill

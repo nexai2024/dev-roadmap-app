@@ -196,6 +196,34 @@ const schema = defineSchema(
       .index("by_parent_license_key", ["parentLicenseKey"])
       .index("by_user", ["userId"]),
 
+    // Community feature requests (roadmap page)
+    featureRequests: defineTable({
+      title: v.string(),
+      description: v.string(),
+      userId: v.id("users"),
+      userEmail: v.optional(v.string()),
+      status: v.union(
+        v.literal("open"),
+        v.literal("accepted"),
+        v.literal("declined"),
+      ),
+      voteCount: v.number(),
+      createdAt: v.number(),
+    })
+      .index("by_status", ["status"])
+      .index("by_user", ["userId"])
+      .index("by_votes", ["voteCount"]),
+
+    // Votes on static roadmap items (id from src/data/roadmap.ts) or feature requests
+    featureVotes: defineTable({
+      targetType: v.union(v.literal("roadmap"), v.literal("request")),
+      targetId: v.string(),
+      userId: v.id("users"),
+      createdAt: v.number(),
+    })
+      .index("by_target", ["targetType", "targetId"])
+      .index("by_user_target", ["userId", "targetType", "targetId"]),
+
     // Centralized Logging
     logs: defineTable({
       message: v.string(),

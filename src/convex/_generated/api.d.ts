@@ -17,6 +17,7 @@ import type * as licenses from "../licenses.js";
 import type * as logs from "../logs.js";
 import type * as notebook from "../notebook.js";
 import type * as payments from "../payments.js";
+import type * as roadmap from "../roadmap.js";
 import type * as users from "../users.js";
 
 import type {
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   logs: typeof logs;
   notebook: typeof notebook;
   payments: typeof payments;
+  roadmap: typeof roadmap;
   users: typeof users;
 }>;
 

@@ -51,6 +51,12 @@ export default function Landing() {
             <a href="#prereqs" className="px-3 py-1 hover:underline">Prereqs</a>
             <a href="#rules" className="px-3 py-1 hover:underline">Rules</a>
           </nav>
+          <Link
+            to="/roadmap"
+            className="px-3 py-1 text-sm font-mono hover:underline shrink-0"
+          >
+            Roadmap
+          </Link>
           <div className="flex-1" />
           {isLoading ? (
             <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -513,6 +519,10 @@ export default function Landing() {
           <span>          © Protocol100 · AI-accelerated 100-day challenge - A Solopreneur Solutions SaaS</span>
           <span className="font-mono">
             [{` `}
+            <Link to="/roadmap" className="underline">
+              roadmap
+            </Link>
+            {` · `}
             <a href="https://makebook.io" className="underline" target="_blank" rel="noreferrer">
               makebook.io
             </a>
