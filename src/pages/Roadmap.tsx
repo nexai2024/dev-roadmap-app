@@ -74,7 +74,7 @@ export default function RoadmapPage() {
   const [votingId, setVotingId] = useState<string | null>(null);
 
   const voteCountById = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new globalThis.Map<string, number>();
     for (const row of voteSummary?.roadmapVotes ?? []) {
       map.set(row.id, row.count);
     }
