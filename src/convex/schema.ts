@@ -36,7 +36,7 @@ const schema = defineSchema(
       bio: v.optional(v.string()),
       twitterHandle: v.optional(v.string()),
       isPaid: v.optional(v.boolean()),
-      // AppSumo Licensing API v2
+      // Unused optional columns — keep until existing user documents are cleaned
       appsumoLicenseKey: v.optional(v.string()),
       appsumoTier: v.optional(v.number()),
 
@@ -46,8 +46,7 @@ const schema = defineSchema(
       lastReminderSentAt: v.optional(v.number()),
     })
       .index("email", ["email"])
-      .index("by_token", ["tokenIdentifier"])
-      .index("by_appsumo_license", ["appsumoLicenseKey"]),
+      .index("by_token", ["tokenIdentifier"]),
 
     // Daily log — one row per user per date. The protocol notebook.
     dailyLogs: defineTable({
@@ -170,31 +169,6 @@ const schema = defineSchema(
       userEmail: v.optional(v.string()),
     })
       .index("by_key", ["key"]),
-
-    // AppSumo Licensing API v2 — license keys are AppSumo-generated UUIDs
-    appsumoLicenses: defineTable({
-      licenseKey: v.string(),
-      prevLicenseKey: v.optional(v.string()),
-      parentLicenseKey: v.optional(v.string()),
-      licenseStatus: v.union(
-        v.literal("inactive"),
-        v.literal("active"),
-        v.literal("deactivated"),
-      ),
-      tier: v.optional(v.number()),
-      partnerPlanName: v.optional(v.string()),
-      unitQuantity: v.optional(v.number()),
-      lastEvent: v.string(),
-      eventTimestamp: v.optional(v.number()),
-      appsumoCreatedAt: v.optional(v.number()),
-      userId: v.optional(v.id("users")),
-      userEmail: v.optional(v.string()),
-      updatedAt: v.number(),
-    })
-      .index("by_license_key", ["licenseKey"])
-      .index("by_prev_license_key", ["prevLicenseKey"])
-      .index("by_parent_license_key", ["parentLicenseKey"])
-      .index("by_user", ["userId"]),
 
     // Community feature requests (roadmap page)
     featureRequests: defineTable({

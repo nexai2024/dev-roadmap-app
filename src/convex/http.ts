@@ -1,34 +1,9 @@
 import { httpRouter } from "convex/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import Stripe from "stripe";
 
 const http = httpRouter();
-
-/** HMAC-SHA256 hex digest for AppSumo webhook verification. */
-async function appsumoHmacHex(secret: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
 
 // Webhook for Stripe payments
 http.route({
@@ -93,7 +68,7 @@ http.route({
       if (customerEmail) {
         // Synchronize to Clerk user metadata
         console.log(`[Stripe Webhook] Syncing Clerk metadata for ${customerEmail}`);
-        await ctx.runAction(api.clerkSync.syncClerkUser, {
+        await ctx.runAction(internal.clerkSync.syncClerkUser, {
           email: customerEmail,
           tier: "lifetime",
         });
@@ -106,131 +81,6 @@ http.route({
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  }),
-});
-
-// AppSumo Licensing API v2 — webhook (Partner Portal validation + live events)
-http.route({
-  path: "/webhook/appsumo",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const rawBody = await request.text();
-    const apiKey = process.env.APPSUMO_API_KEY;
-    const signature = request.headers.get("X-Appsumo-Signature");
-    const timestamp = request.headers.get("X-Appsumo-Timestamp");
-
-    // Soft HMAC: log mismatches but never fail Partner Portal validation.
-    if (apiKey && signature && timestamp) {
-      const expected = await appsumoHmacHex(apiKey, `${timestamp}${rawBody}`);
-      if (!timingSafeEqual(expected, signature)) {
-        console.warn("[AppSumo Webhook] Invalid HMAC signature (continuing)");
-      }
-    }
-
-    let payload: Record<string, unknown> = {};
-    try {
-      payload = JSON.parse(rawBody) as Record<string, unknown>;
-    } catch {
-      console.warn("[AppSumo Webhook] Invalid JSON body — acknowledging anyway");
-      return new Response(JSON.stringify({ event: "activate", success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const event = typeof payload.event === "string" ? payload.event : "purchase";
-    const knownEvents = new Set([
-      "purchase",
-      "activate",
-      "upgrade",
-      "downgrade",
-      "migrate",
-      "deactivate",
-    ]);
-    const safeEvent = knownEvents.has(event) ? event : "activate";
-
-    try {
-      if (knownEvents.has(event) && payload.license_key) {
-        await ctx.runMutation(internal.appsumo.processWebhookEvent, {
-          payload: {
-            license_key: String(payload.license_key ?? ""),
-            event: safeEvent as
-              | "purchase"
-              | "activate"
-              | "upgrade"
-              | "downgrade"
-              | "migrate"
-              | "deactivate",
-            license_status: payload.license_status as
-              | "inactive"
-              | "active"
-              | "deactivated"
-              | undefined,
-            event_timestamp:
-              typeof payload.event_timestamp === "number"
-                ? payload.event_timestamp
-                : undefined,
-            created_at:
-              typeof payload.created_at === "number" ? payload.created_at : undefined,
-            tier: typeof payload.tier === "number" ? payload.tier : undefined,
-            test: payload.test === true,
-            prev_license_key:
-              typeof payload.prev_license_key === "string"
-                ? payload.prev_license_key
-                : undefined,
-            parent_license_key:
-              typeof payload.parent_license_key === "string"
-                ? payload.parent_license_key
-                : undefined,
-            partner_plan_name:
-              typeof payload.partner_plan_name === "string"
-                ? payload.partner_plan_name
-                : undefined,
-            unit_quantity:
-              typeof payload.unit_quantity === "number"
-                ? payload.unit_quantity
-                : undefined,
-          },
-        });
-      }
-    } catch (err) {
-      // Always acknowledge — AppSumo retries only help if we return non-200.
-      console.error("[AppSumo Webhook] Processing error (still returning success):", err);
-    }
-
-    console.log(`[AppSumo Webhook] ✅ ${safeEvent} for ${String(payload.license_key ?? "")}`);
-    return new Response(JSON.stringify({ event: safeEvent, success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }),
-});
-
-// AppSumo OAuth redirect — Partner Portal validates with GET → 200.
-// Live activations include ?code= — forward to the SPA callback.
-http.route({
-  path: "/appsumo/redirect",
-  method: "GET",
-  handler: httpAction(async (_ctx, request) => {
-    const url = new URL(request.url);
-    const code = url.searchParams.get("code");
-    const siteUrl = process.env.SITE_URL?.replace(/\/$/, "");
-
-    if (code && siteUrl) {
-      return Response.redirect(`${siteUrl}/appsumo?code=${encodeURIComponent(code)}`, 302);
-    }
-
-    // Portal validation (no code) or missing SITE_URL — return 200 OK
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: code
-          ? "Set SITE_URL so AppSumo OAuth can redirect to the SPA"
-          : "AppSumo OAuth redirect URL OK",
-        code: code ?? null,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
   }),
 });
 

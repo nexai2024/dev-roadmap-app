@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/v2/webhooks",
-      "destination": "/api/v2/webhooks"
-    },
-    {
-      "source": "/webhook/appsumo",
-      "destination": "/api/webhook/appsumo"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

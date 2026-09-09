@@ -111,7 +111,7 @@ export default function RoadmapPage() {
 
   async function handleRoadmapVote(itemId: string) {
     if (!isAuthenticated) {
-      toast.error("Sign in to vote — AppSumo buyers steer the planned column");
+      toast.error("Sign in to vote on planned work");
       return;
     }
     setVotingId(itemId);
@@ -224,7 +224,7 @@ export default function RoadmapPage() {
           {ROADMAP_INTRO.subtitle}
         </p>
         <p className="text-sm text-muted-foreground mt-3 max-w-2xl leading-relaxed border-l-2 border-border pl-4">
-          {ROADMAP_INTRO.note} Sumo-lings: sign in and upvote planned items — highest votes float to the top.
+          {ROADMAP_INTRO.note} Sign in and upvote planned items — highest votes float to the top.
         </p>
 
         <div className="flex flex-wrap gap-2 mt-8">
@@ -260,7 +260,7 @@ export default function RoadmapPage() {
                 </h2>
                 {canVote ? (
                   <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground">
-                    Sorted by Sumo-ling votes
+                    Sorted by community votes
                   </span>
                 ) : null}
               </div>
@@ -330,7 +330,7 @@ export default function RoadmapPage() {
               Missing something? Add it — votes decide what we pull into Planned.
             </h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              Signed-in users (including AppSumo lifetime) can submit up to 5 open ideas
+              Signed-in users can submit up to 5 open ideas
               and upvote others. We review high-vote requests when prioritizing the next quarter.
             </p>
 
@@ -448,17 +448,13 @@ export default function RoadmapPage() {
         <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row md:items-center gap-6 justify-between">
           <div className="max-w-xl">
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-mono flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> AppSumo lifetime buyers
+              <Sparkles className="h-3.5 w-3.5" /> Lifetime access
             </p>
             <h2 className="font-mono text-2xl mt-2 leading-tight">
               Your license covers the shipped product — votes shape what we build next.
             </h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              Activate at{" "}
-              <Link to="/appsumo" className="underline underline-offset-2">
-                /appsumo
-              </Link>{" "}
-              after purchase, or paste your license UUID in Settings.
+              Redeem a license key in Settings, or start the protocol and upgrade when you’re ready.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -481,10 +477,6 @@ export default function RoadmapPage() {
           <span className="font-mono">
             <Link to="/" className="underline">
               Home
-            </Link>
-            {" · "}
-            <Link to="/appsumo" className="underline">
-              AppSumo activate
             </Link>
           </span>
         </div>

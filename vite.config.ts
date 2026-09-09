@@ -94,21 +94,6 @@ export default defineConfig({
     hmr: {
       overlay: false,
     },
-    // Local branded AppSumo paths → Convex HTTP (or appsumo-licensing-test on :8083)
-    proxy: {
-      "/v2/webhooks": {
-        target: process.env.VITE_CONVEX_SITE_URL || "http://localhost:8083",
-        changeOrigin: true,
-        rewrite: () =>
-          process.env.VITE_CONVEX_SITE_URL ? "/webhook/appsumo" : "/v2/webhooks",
-      },
-      "/webhook/appsumo": {
-        target: process.env.VITE_CONVEX_SITE_URL || "http://localhost:8083",
-        changeOrigin: true,
-        rewrite: () =>
-          process.env.VITE_CONVEX_SITE_URL ? "/webhook/appsumo" : "/v2/webhooks",
-      },
-    },
   },
 });
 

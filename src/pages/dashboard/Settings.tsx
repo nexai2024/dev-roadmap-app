@@ -19,8 +19,6 @@ interface ProfileType {
   accountabilityEnabled?: boolean;
   remindersEnabled?: boolean;
   licenseType?: string;
-  licenseKey?: string;
-  appsumoTier?: number;
 }
 
 function generateSafeHardwareId() {
@@ -259,11 +257,7 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                     {(profile.licenseType === "free" || !profile.licenseType) && "You are currently on the 3-day free trial."}
                     {profile.licenseType === "trial" && "You have active trial access."}
                     {profile.licenseType === "subscription" && "You have an active annual subscription."}
-                    {profile.licenseType === "lifetime" && (
-                      profile.licenseKey
-                        ? `AppSumo lifetime access${profile.appsumoTier ? ` (tier ${profile.appsumoTier})` : ""}.`
-                        : "You have permanent lifetime access."
-                    )}
+                    {profile.licenseType === "lifetime" && "You have permanent lifetime access."}
                   </p>
                 </div>
               </div>
@@ -284,28 +278,6 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
               </Button>
             </div>
 
-            {profile.licenseKey && (
-              <div className="p-4 rounded-md border bg-muted/30 flex items-center justify-between">
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Active License Key</div>
-                  <div className="font-mono text-sm font-bold">{profile.licenseKey}</div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-[10px] uppercase font-mono"
-                  onClick={() => {
-                    if (profile.licenseKey) {
-                      navigator.clipboard.writeText(profile.licenseKey);
-                      toast.success("License key copied to clipboard");
-                    }
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
-            )}
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="licenseKey" className="font-mono text-xs uppercase tracking-widest">Activate License Key</Label>
@@ -314,7 +286,7 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                     id="licenseKey"
                     value={licenseKey}
                     onChange={(e) => setLicenseKey(e.target.value)}
-                    placeholder="XXXX-XXXX-XXXX-XXXX or AppSumo UUID"
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
                     className="font-mono"
                   />
                   <Button
@@ -326,9 +298,7 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Info className="h-3 w-3" /> AppSumo buyers: activate via{" "}
-                  <a href="/appsumo" className="underline underline-offset-2">/appsumo</a>
-                  {" "}OAuth, or paste your license UUID here.
+                  <Info className="h-3 w-3" /> Paste a license key from your purchase email.
                 </p>
               </div>
             </div>

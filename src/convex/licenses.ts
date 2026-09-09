@@ -57,45 +57,6 @@ export const activate = mutation({
     //   return { success: true, type: "lifetime" };
     // }
 
-    // AppSumo UUID keys (RFC 4122) — bind if webhook already stored the license
-    const rawKey = args.key.trim();
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        rawKey,
-      );
-    if (isUuid) {
-      const appsumoLicense = await ctx.db
-        .query("appsumoLicenses")
-        .withIndex("by_license_key", (q) => q.eq("licenseKey", rawKey))
-        .unique();
-
-      if (!appsumoLicense) {
-        throw new Error(
-          "AppSumo license not found yet. Activate via AppSumo OAuth, or wait for the purchase webhook and try again.",
-        );
-      }
-      if (appsumoLicense.licenseStatus === "deactivated") {
-        throw new Error("This AppSumo license has been deactivated");
-      }
-      if (appsumoLicense.userId && appsumoLicense.userId !== user._id) {
-        throw new Error("This license is already linked to another account");
-      }
-
-      await ctx.db.patch(appsumoLicense._id, {
-        userId: user._id,
-        userEmail: user.email,
-        licenseStatus: "active",
-        lastEvent: "activate",
-        updatedAt: Date.now(),
-      });
-      await ctx.db.patch(user._id, {
-        isPaid: true,
-        appsumoLicenseKey: rawKey,
-        appsumoTier: appsumoLicense.tier,
-      });
-      return { success: true, type: "lifetime" };
-    }
-
     const license = await ctx.db
       .query("licenses")
       .withIndex("by_key", (q) => q.eq("key", args.key))

@@ -16,7 +16,7 @@ export const ROADMAP_STATUS_LABEL: Record<RoadmapStatus, string> = {
 };
 
 /**
- * Public product roadmap for AppSumo + customers.
+ * Public product roadmap.
  * Keep items concrete and tied to the actual Protocol100 product surface.
  */
 export const ROADMAP_ITEMS: RoadmapItem[] = [
@@ -33,14 +33,6 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
     title: "AI daily debriefs",
     description:
       "Paid users get a private coaching summary from their logs — what shipped, what’s stuck, and what to do tomorrow.",
-    status: "shipped",
-    eta: "Live",
-  },
-  {
-    id: "appsumo-licensing",
-    title: "AppSumo lifetime licensing",
-    description:
-      "OAuth activation, webhook license sync, upgrade/downgrade handling, and Settings key redeem for Sumo-lings.",
     status: "shipped",
     eta: "Live",
   },
@@ -121,6 +113,6 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 export const ROADMAP_INTRO = {
   title: "Product roadmap",
   subtitle:
-    "What we already shipped, what we’re building next, and what we’re exploring — so AppSumo buyers know this product keeps moving after launch day.",
+    "What we already shipped, what we’re building next, and what we’re exploring — so you know this product keeps moving after launch day.",
   note: "Dates are targets, not contracts. Shipped items stay free for lifetime license holders unless we mark something as a paid add-on in advance.",
 };

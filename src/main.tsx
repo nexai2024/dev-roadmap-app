@@ -18,7 +18,6 @@ const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 // Lazy load route components for better code splitting (extensionless paths)
 const Landing = lazy(() => import("./pages/Landing"));
 const AuthPage = lazy(() => import("./pages/Auth"));
-const AppsumoActivatePage = lazy(() => import("./pages/AppsumoActivate"));
 const RoadmapPage = lazy(() => import("./pages/Roadmap"));
 const LicensingTest = lazy(() => import("./pages/LicensingTest"));
 const ErrorTest = lazy(() => import("./pages/ErrorTest"));
@@ -94,7 +93,6 @@ createRoot(document.getElementById("root")!, {
               <SentryRoutes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth/*" element={<AuthPage />} />
-                <Route path="/appsumo" element={<AppsumoActivatePage />} />
                 <Route path="/roadmap" element={<RoadmapPage />} />
                 <Route path="/licensing-test" element={<LicensingTest />} />
                 <Route path="/error-test" element={<ErrorTest />} />
