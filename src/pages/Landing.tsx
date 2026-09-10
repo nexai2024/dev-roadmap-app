@@ -24,10 +24,17 @@ import {
   getDaySchedule,
 } from "@/data/protocol";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { LifetimeDealCard } from "@/components/LifetimeDealCard";
 
 export default function Landing() {
   const { isAuthenticated, isLoading } = useAuth();
+  const profile = useQuery(api.notebook.currentProfile);
   const sampleDay = getDaySchedule(4);
+  const pricingCta: "checkout" | "signup" | "dashboard" = isAuthenticated
+    ? (profile?.isPaid ? "dashboard" : "checkout")
+    : "signup";
 
   return (
     <motion.div
@@ -49,6 +56,7 @@ export default function Landing() {
             <a href="#actions" className="px-3 py-1 hover:underline">Actions</a>
             <a href="#inside" className="px-3 py-1 hover:underline">Inside</a>
             <a href="#prereqs" className="px-3 py-1 hover:underline">Prereqs</a>
+            <a href="#pricing" className="px-3 py-1 hover:underline">Pricing</a>
             <a href="#rules" className="px-3 py-1 hover:underline">Rules</a>
           </nav>
           <Link
@@ -481,6 +489,20 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* PRICING */}
+      <section id="pricing" className="border-y border-border bg-card/40">
+        <div className="max-w-7xl mx-auto px-6 py-16 grid lg:grid-cols-[1fr_0.9fr] gap-10 items-center">
+          <div>
+            <SectionHeader
+              kicker="Lifetime deal"
+              title="One price. All 100 days. No monthly drip."
+              description="List price is $99.99. Early bird is 75% off for the first 100 licenses — $24.99 once, until Oct 9. Start the 3-day trial free, then unlock the rest of the protocol forever."
+            />
+          </div>
+          <LifetimeDealCard cta={pricingCta} />
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-6 py-20 text-center">
         <p className="nb-tape inline-block px-2 py-0.5 text-[11px] uppercase tracking-widest font-mono rotate-[1deg] mb-4">
@@ -493,9 +515,10 @@ export default function Landing() {
           </span>
         </h2>
         <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-          Free forever. Multi-user. Engineer's grid notebook. Tracks every
-          commit, every shipped day, every paid customer — on the way to 3
-          paying customers by Day 100 and $1k MRR after.
+          3-day free trial. Then lifetime unlock — $99.99, or 75% off for the
+          first 100 licenses. Engineer's grid notebook. Tracks every commit, every
+          shipped day, every paid customer — on the way to 3 paying customers by
+          Day 100 and $1k MRR after.
         </p>
         <div className="flex flex-wrap justify-center gap-3 mt-8">
           {isAuthenticated ? (

@@ -83,7 +83,13 @@ createRoot(document.getElementById("root")!, {
   onRecoverableError: Sentry.reactErrorHandler(),
 }).render(
   <StrictMode>
-    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}>
+    <ClerkProvider
+      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}
+      signInUrl="/auth"
+      signUpUrl="/auth?mode=sign-up"
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
+    >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}> 
         <VlyToolbar />
         <InstrumentationProvider>

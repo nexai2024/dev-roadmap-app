@@ -13,6 +13,8 @@ import type * as clerkSync from "../clerkSync.js";
 import type * as coach from "../coach.js";
 import type * as http from "../http.js";
 import type * as licenses from "../licenses.js";
+import type * as lifetime from "../lifetime.js";
+import type * as lifetimeOffer from "../lifetimeOffer.js";
 import type * as logs from "../logs.js";
 import type * as notebook from "../notebook.js";
 import type * as payments from "../payments.js";
@@ -31,6 +33,8 @@ declare const fullApi: ApiFromModules<{
   coach: typeof coach;
   http: typeof http;
   licenses: typeof licenses;
+  lifetime: typeof lifetime;
+  lifetimeOffer: typeof lifetimeOffer;
   logs: typeof logs;
   notebook: typeof notebook;
   payments: typeof payments;

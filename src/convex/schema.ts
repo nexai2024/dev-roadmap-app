@@ -46,7 +46,8 @@ const schema = defineSchema(
       lastReminderSentAt: v.optional(v.number()),
     })
       .index("email", ["email"])
-      .index("by_token", ["tokenIdentifier"]),
+      .index("by_token", ["tokenIdentifier"])
+      .index("by_paid", ["isPaid"]),
 
     // Daily log — one row per user per date. The protocol notebook.
     dailyLogs: defineTable({

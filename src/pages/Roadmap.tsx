@@ -454,7 +454,7 @@ export default function RoadmapPage() {
               Your license covers the shipped product — votes shape what we build next.
             </h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              Redeem a license key in Settings, or start the protocol and upgrade when you’re ready.
+              Lifetime is $99.99 — 75% off for the first 100 licenses. Redeem a key in Settings, or unlock from Billing.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -465,7 +465,7 @@ export default function RoadmapPage() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/">Back to home</Link>
+              <Link to="/#pricing">See lifetime deal</Link>
             </Button>
           </div>
         </div>

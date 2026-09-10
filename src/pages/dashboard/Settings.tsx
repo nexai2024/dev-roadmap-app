@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Loader2, User, Key, ShieldCheck, Twitter, Info, Bell, AlertTriangle, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Link } from "react-router";
+import { formatUsdFromCents } from "@/convex/lifetimeOffer";
+import { useLifetimeOffer } from "@/hooks/useLifetimeOffer";
 
 interface ProfileType {
   _id: string;
@@ -62,6 +65,7 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
 
   const [licenseKey, setLicenseKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
+  const lifetimeOffer = useLifetimeOffer();
 
   const resetUserData = useMutation(api.notebook.resetUserData);
   const [isResetting, setIsResetting] = useState(false);
@@ -259,6 +263,15 @@ function SettingsForm({ profile }: { profile: ProfileType }) {
                     {profile.licenseType === "subscription" && "You have an active annual subscription."}
                     {profile.licenseType === "lifetime" && "You have permanent lifetime access."}
                   </p>
+                  {profile.licenseType !== "lifetime" && (
+                    <p className="text-xs mt-2">
+                      <Link to="/dashboard/billing" className="underline underline-offset-2 font-mono">
+                        {lifetimeOffer.earlyBird
+                          ? `Early bird lifetime ${formatUsdFromCents(lifetimeOffer.amountCents)} — ${lifetimeOffer.remainingSpots} of ${lifetimeOffer.spotCap} spots left`
+                          : `Unlock lifetime for ${formatUsdFromCents(lifetimeOffer.amountCents)}`}
+                      </Link>
+                    </p>
+                  )}
                 </div>
               </div>
               <Button

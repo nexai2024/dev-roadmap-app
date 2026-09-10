@@ -26,6 +26,8 @@ import { api } from "@/convex/_generated/api";
 import { PHASES, type PhaseId } from "@/data/protocol";
 import { TrialGate } from "./TrialGate";
 import { UserButton } from "@clerk/clerk-react";
+import { formatCountdown, formatUsdFromCents } from "@/convex/lifetimeOffer";
+import { useLifetimeOffer } from "@/hooks/useLifetimeOffer";
 
 const NAV = [
   { to: "/dashboard", icon: Home, label: "Today", end: true },
@@ -262,7 +264,8 @@ export default function DashboardLayout() {
         </header>
 
         <main className="flex-1 px-4 sm:px-8 py-6 sm:py-10 nb-margin">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto space-y-4">
+            <EarlyBirdBanner isPaid={profile?.isPaid} />
             <TrialGate profile={profile ?? null}>
               <Outlet />
             </TrialGate>
@@ -270,6 +273,28 @@ export default function DashboardLayout() {
         </main>
       </div>
     </div>
+  );
+}
+
+function EarlyBirdBanner({ isPaid }: { isPaid?: boolean }) {
+  const offer = useLifetimeOffer();
+  if (isPaid || !offer.earlyBird) return null;
+
+  return (
+    <Link
+      to="/dashboard/billing"
+      className="nb-card border-primary/40 px-4 py-3 flex flex-wrap items-center justify-between gap-2 hover:bg-sidebar-accent"
+    >
+      <span className="font-mono text-xs uppercase tracking-widest">
+        Early bird {offer.percentOff}% off lifetime — {formatUsdFromCents(offer.amountCents)}
+        <span className="text-muted-foreground line-through ml-2">
+          {formatUsdFromCents(offer.listPriceCents)}
+        </span>
+      </span>
+      <span className="font-mono text-[11px] text-primary">
+        {offer.remainingSpots} spots · {formatCountdown(offer.remainingMs)} left →
+      </span>
+    </Link>
   );
 }
 

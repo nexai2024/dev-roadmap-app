@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
@@ -37,6 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { LifetimeDealCard } from "@/components/LifetimeDealCard";
 import * as Sentry from '@sentry/react';
 // Add this button component to your app to test Sentry's error tracking
 function ErrorButton() {
@@ -63,8 +64,6 @@ export default function TodayPage() {
   const dayParam = searchParams.get("day");
 
   const logs = useQuery(api.notebook.listLogs, { limit: 200 });
-  const createCheckoutSession = useAction(api.payments.createCheckoutSession);
-  const [isUnlocking, setIsUnlocking] = useState(false);
 
   // AI Coach state
   const generateDebrief = useAction(api.coach.generateDailyDebrief);
@@ -143,28 +142,6 @@ export default function TodayPage() {
     if (type === "subscription") return 30;
     return 3; // "free" or "trial"
   }, [profile?.isPaid, profile?.licenseType]);
-
-  const handleUpgrade = async () => {
-    setIsUnlocking(true);
-    try {
-      try {
-        const checkoutUrl = await createCheckoutSession({
-          email: profile?.email || profile?.displayName || "founder@protocol100.com"
-        });
-        window.location.href = checkoutUrl;
-      } catch (e) {
-        console.warn("Upgrade checkout failed, simulating unlock...", e);
-        toast.info("Redirecting to secure upgrade checkout...");
-        setTimeout(async () => {
-          toast.error("Manual upgrade is disabled. Please complete the purchase flow.");
-          setIsUnlocking(false);
-        }, 2000);
-      }
-    } catch {
-      toast.error("Failed to initiate checkout. Please try again.");
-      setIsUnlocking(false);
-    }
-  };
 
   const handleNavigateDay = (targetDay: number) => {
     const targetPhase = PHASES.find((p) => targetDay >= p.dayStart && targetDay <= p.dayEnd) ?? PHASES[0];
@@ -328,8 +305,6 @@ export default function TodayPage() {
         <UpgradeGateCard
           maxAllowedDay={maxAllowedDay}
           licenseType={profile?.licenseType ?? "free"}
-          onUnlock={handleUpgrade}
-          busy={isUnlocking}
         />
       ) : (
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-4">
@@ -963,13 +938,9 @@ function Header({ title, subtitle }: { title: string; subtitle: string }) {
 function UpgradeGateCard({
   maxAllowedDay,
   licenseType,
-  onUnlock,
-  busy,
 }: {
   maxAllowedDay: number;
   licenseType: string;
-  onUnlock: () => void;
-  busy: boolean;
 }) {
   const licenseName =
     licenseType === "free" || licenseType === "free-trial" || licenseType === "free"
@@ -998,9 +969,9 @@ function UpgradeGateCard({
             Your current license ({licenseName}) only allows access to days 1 to {maxAllowedDay} of the Protocol100 curriculum. Upgrade your license to unlock the full 100 days.
           </p>
 
-          <Button onClick={onUnlock} disabled={busy} className="mt-6 h-12 px-8 font-mono">
-            {busy ? "Unlocking..." : "Upgrade License to Lifetime"}
-          </Button>
+          <div className="mt-6 w-full max-w-md text-left">
+            <LifetimeDealCard cta="checkout" compact />
+          </div>
         </div>
       </div>
     </div>
@@ -1144,8 +1115,10 @@ function CoachCard({
         <p className="text-muted-foreground text-sm max-w-md relative z-10 font-mono">
           Save your daily logs and get personalized, no-BS feedback from your AI coach to stay on track.
         </p>
-        <Button variant="outline" className="mt-4 font-mono text-xs z-10 relative">
-          <Lock className="mr-2 h-3 w-3" /> Unlock with Lifetime License
+        <Button variant="outline" className="mt-4 font-mono text-xs z-10 relative" asChild>
+          <Link to="/dashboard/billing">
+            <Lock className="mr-2 h-3 w-3" /> Unlock with Lifetime License
+          </Link>
         </Button>
       </div>
     );

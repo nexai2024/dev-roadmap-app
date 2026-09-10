@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { toast } from "sonner";
+import { LifetimeDealCard } from "@/components/LifetimeDealCard";
 
 interface TrialGateProps {
   children: React.ReactNode;
@@ -19,42 +20,17 @@ interface TrialGateProps {
 
 export function TrialGate({ children, profile }: TrialGateProps) {
   const navigate = useNavigate();
-
-  // If no profile or no startedAt, we don't gate (yet)
-  if (!profile || !profile.startedAt) {
-    return <>{children}</>;
-  }
-
-  const start = new Date(profile.startedAt);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  const currentDay = Math.max(1, diff + 1);
-
-  const isTrialExpired = currentDay > 3 && !profile.isPaid;
-
-  if (!isTrialExpired) {
-    return <>{children}</>;
-  }
-
-  const stripeUrl = profile.email
-    ? `https://buy.stripe.com/00w6oIbKTaPCdVCbxlgA801?client_reference_id=${profile._id}&prefilled_email=${encodeURIComponent(profile.email)}`
-    : `https://buy.stripe.com/00w6oIbKTaPCdVCbxlgA801?client_reference_id=${profile._id}`;
-
-  const handleUnlock = () => {
-    try {
-      if (window.top && window.top !== window) {
-        window.top.location.href = stripeUrl;
-      } else {
-        window.location.href = stripeUrl;
-      }
-    } catch {
-      window.open(stripeUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
   const activateLicense = useMutation(api.licenses.activate);
   const [inputKey, setInputKey] = useState("");
   const [isActivatingKey, setIsActivatingKey] = useState(false);
+
+  const start = profile?.startedAt ? new Date(profile.startedAt) : null;
+  const now = new Date();
+  const diff = start
+    ? Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+  const currentDay = Math.max(1, diff + 1);
+  const isTrialExpired = Boolean(profile?.startedAt) && currentDay > 3 && !profile?.isPaid;
 
   const handleActivateKey = async () => {
     if (!inputKey.trim()) return;
@@ -65,12 +41,16 @@ export function TrialGate({ children, profile }: TrialGateProps) {
         toast.success(`License key activated! Tier: ${res.type}`);
         setInputKey("");
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Activation failed. Please check your key.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Activation failed. Please check your key.");
     } finally {
       setIsActivatingKey(false);
     }
   };
+
+  if (!profile || !profile.startedAt || !isTrialExpired) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
@@ -94,37 +74,9 @@ export function TrialGate({ children, profile }: TrialGateProps) {
             must unlock the full notebook.
           </p>
 
-          <div className="mt-8 grid gap-4 w-full max-w-sm">
-            <div className="nb-card p-4 text-left border-primary/30">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="font-mono text-xs uppercase font-bold">What's included:</span>
-              </div>
-              <ul className="text-xs space-y-2 mt-2 font-mono">
-                <li className="flex gap-2">
-                  <span className="text-primary">✓</span> Full 100-day schedule & deliverables
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">✓</span> Unlimited Logbook entries
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">✓</span> All 11 Key Action trackers
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">✓</span> Weekly & Monthly performance reviews
-                </li>
-              </ul>
-            </div>
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg font-mono"
-              onClick={handleUnlock}
-            >
-              Unlock Full Protocol ($99)
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+          <div className="mt-8 grid gap-4 w-full max-w-md text-left">
+            <LifetimeDealCard cta="checkout" compact />
 
-            {/* License Key Activation Form directly on Paywall */}
             <div className="pt-2 pb-1 space-y-2 border-t border-dashed border-border mt-2">
               <div className="flex gap-2">
                 <input
@@ -138,7 +90,7 @@ export function TrialGate({ children, profile }: TrialGateProps) {
                   size="sm"
                   variant="default"
                   className="font-mono text-xs shrink-0"
-                  onClick={handleActivateKey}
+                  onClick={() => void handleActivateKey()}
                   disabled={isActivatingKey || !inputKey.trim()}
                 >
                   {isActivatingKey ? "Activating..." : "Activate Key"}
@@ -154,8 +106,9 @@ export function TrialGate({ children, profile }: TrialGateProps) {
             >
               View Billing & Membership Details
             </Button>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
-              One-time payment · Lifetime access
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 text-center flex items-center justify-center gap-1">
+              <Sparkles className="h-3 w-3" /> One-time payment · Lifetime access
+              <ArrowRight className="h-3 w-3" />
             </p>
           </div>
         </div>
