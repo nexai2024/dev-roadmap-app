@@ -55,8 +55,8 @@ export default function MilestonesPage() {
 
       <div className="space-y-3">
         {milestones === undefined && (
-          <div className="nb-card p-10 text-center animate-pulse text-muted-foreground font-mono">
-            Loading milestones...
+          <div className="nb-card px-4 py-3 text-sm text-muted-foreground font-mono animate-pulse">
+            Loading saved progress…
           </div>
         )}
         {OUTPUTS.map((m) => {

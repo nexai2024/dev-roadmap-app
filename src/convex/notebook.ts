@@ -7,6 +7,13 @@ import { isAdmin } from "./users";
 import { api } from "./_generated/api";
 import { vly } from "../lib/vly-integrations";
 
+/** Convex return validators reject explicit `undefined` on optional fields. */
+function omitUndefined<T extends Record<string, unknown>>(row: T): T {
+  return Object.fromEntries(
+    Object.entries(row).filter(([, value]) => value !== undefined),
+  ) as T;
+}
+
 // =============================================
 // PROFILE
 // =============================================
@@ -481,10 +488,20 @@ export const listMilestones = query({
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user) return [];
-    return await ctx.db
+    const rows = await ctx.db
       .query("milestones")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(100);
+    // Omit undefined optionals — Convex return validators reject explicit undefined.
+    return rows.map((row) =>
+      omitUndefined({
+        _id: row._id,
+        milestoneId: row.milestoneId,
+        status: row.status,
+        proofUrl: row.proofUrl,
+        completedAt: row.completedAt,
+      }),
+    );
   },
 });
 
@@ -556,11 +573,22 @@ export const listConciergeOrders = query({
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user) return [];
-    return await ctx.db
+    const rows = await ctx.db
       .query("conciergeOrders")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
-      .collect();
+      .take(100);
+    return rows.map((row) =>
+      omitUndefined({
+        _id: row._id,
+        date: row.date,
+        customerName: row.customerName,
+        amount: row.amount,
+        status: row.status,
+        feedback: row.feedback,
+        notes: row.notes,
+      }),
+    );
   },
 });
 
@@ -631,11 +659,21 @@ export const listOutreachLogs = query({
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user) return [];
-    return await ctx.db
+    const rows = await ctx.db
       .query("outreachLogs")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
-      .collect();
+      .take(200);
+    return rows.map((row) =>
+      omitUndefined({
+        _id: row._id,
+        date: row.date,
+        type: row.type,
+        target: row.target,
+        result: row.result,
+        notes: row.notes,
+      }),
+    );
   },
 });
 
@@ -682,11 +720,22 @@ export const listMonthlyReviews = query({
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user) return [];
-    return await ctx.db
+    const rows = await ctx.db
       .query("monthlyReviews")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
-      .collect();
+      .take(36);
+    return rows.map((row) =>
+      omitUndefined({
+        _id: row._id,
+        month: row.month,
+        totalHours: row.totalHours,
+        totalCommits: row.totalCommits,
+        mrrEnd: row.mrrEnd,
+        summary: row.summary,
+        notes: row.notes,
+      }),
+    );
   },
 });
 
@@ -742,18 +791,20 @@ export const listReviews = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(60);
-    return rows.map((r) => ({
-      _id: r._id,
-      _creationTime: r._creationTime,
-      weekStartDate: r.weekStartDate,
-      hoursCoded: r.hoursCoded,
-      weeksSinceLastDeploy: r.weeksSinceLastDeploy,
-      mrrWeek: r.mrrWeek,
-      mrrLastWeek: r.mrrLastWeek,
-      summary: r.summary,
-      publishedUrl: r.publishedUrl,
-      notes: r.notes,
-    }));
+    return rows.map((r) =>
+      omitUndefined({
+        _id: r._id,
+        _creationTime: r._creationTime,
+        weekStartDate: r.weekStartDate,
+        hoursCoded: r.hoursCoded,
+        weeksSinceLastDeploy: r.weeksSinceLastDeploy,
+        mrrWeek: r.mrrWeek,
+        mrrLastWeek: r.mrrLastWeek,
+        summary: r.summary,
+        publishedUrl: r.publishedUrl,
+        notes: r.notes,
+      }),
+    );
   },
 });
 
