@@ -481,10 +481,17 @@ export const listMilestones = query({
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user) return [];
-    return await ctx.db
+    const milestones = await ctx.db
       .query("milestones")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
+    return milestones.map((m) => ({
+      _id: m._id,
+      milestoneId: m.milestoneId,
+      status: m.status,
+      proofUrl: m.proofUrl,
+      completedAt: m.completedAt,
+    }));
   },
 });
 
